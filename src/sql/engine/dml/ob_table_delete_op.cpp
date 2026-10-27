@@ -18,6 +18,7 @@
 #include "config_bridge.h"
 #include "sql/engine/dml/ob_table_delete_op.h"
 #include "sql/engine/dml/ob_dml_service.h"
+#include "sql/engine/dml/ob_ai_column_runtime.h"
 
 namespace oceanbase
 {
@@ -247,6 +248,8 @@ OB_INLINE int ObTableDeleteOp::delete_row_to_das()
         //so need to break this loop
         break;
       } else if (OB_FAIL(calc_tablet_loc(del_ctdef, del_rtdef, tablet_loc))) {
+      } else if (del_ctdef.is_primary_index_ &&
+                 OB_FAIL(ObAIColumnRuntime::on_delete(ctx_, del_ctdef, eval_ctx_))) {
       } else if (OB_FAIL(ObDMLService::delete_row(del_ctdef, del_rtdef, tablet_loc, dml_rtctx_, modify_row.old_row_))) {
       } else if (need_after_row_process(del_ctdef) && OB_FAIL(dml_modify_rows_.push_back(modify_row))) {
       } else {

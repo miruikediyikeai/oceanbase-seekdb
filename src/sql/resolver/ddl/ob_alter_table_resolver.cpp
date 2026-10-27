@@ -25,6 +25,7 @@
 #include "sql/session/ob_local_session_var.h"
 #include "query/command/ob_root_command_service.h"
 #include "query/vector/ob_vector_index_util.h"
+#include "sql/engine/dml/ob_ai_column_runtime.h"
 
 namespace oceanbase
 {
@@ -401,6 +402,11 @@ int ObAlterTableResolver::resolve_action_list(const ParseNode &node)
       } else if (FALSE_IT(alter_table_stmt->inc_alter_table_action_count())) {
       } else {
         switch (action_node->type_) {
+        case T_ALTER_AI_COLUMN_RETRY: {
+          ret = OB_NOT_SUPPORTED;
+          LOG_USER_ERROR(OB_NOT_SUPPORTED, "combining AI COLUMN RETRY with another ALTER action");
+          break;
+        }
         //deal with alter table option
         case T_ALTER_TABLE_OPTION: {
             alter_table_stmt->set_alter_table_option();
@@ -3457,6 +3463,23 @@ int ObAlterTableResolver::resolve_add_column(const ParseNode &node, ObColumnName
         if (OB_SUCC(ret)) {
           if (OB_FAIL(alter_table_stmt->add_column(alter_column_schema))) {
           } else if (FALSE_IT(alter_table_stmt->set_sql_mode(session_info_->get_sql_mode()))) {
+          } else if (ObAIColumnRuntime::is_ai_comment(alter_column_schema.get_comment())) {
+            char state_name[128];
+            char request_name[128];
+            char spec_name[128];
+            if (OB_FAIL(ObAIColumnRuntime::add_alter_hidden(
+                    alter_table_stmt->get_alter_table_arg().alter_table_schema_,
+                    alter_column_schema.get_column_name()))) {
+            } else if (OB_FAIL(ObAIColumnRuntime::hidden_name(state_name, sizeof(state_name), "st",
+                                                              alter_column_schema.get_column_name()))) {
+            } else if (OB_FAIL(ObAIColumnRuntime::hidden_name(request_name, sizeof(request_name), "rq",
+                                                              alter_column_schema.get_column_name()))) {
+            } else if (OB_FAIL(ObAIColumnRuntime::hidden_name(spec_name, sizeof(spec_name), "sp",
+                                                              alter_column_schema.get_column_name()))) {
+            } else if (OB_FAIL(add_column_names_set.set_refactored(ObColumnSchemaHashWrapper(ObString(state_name))))) {
+            } else if (OB_FAIL(add_column_names_set.set_refactored(ObColumnSchemaHashWrapper(ObString(request_name))))) {
+            } else if (OB_FAIL(add_column_names_set.set_refactored(ObColumnSchemaHashWrapper(ObString(spec_name))))) {
+            }
           }
         }
       }

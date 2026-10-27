@@ -32,6 +32,7 @@
 #include "share/rc/ob_server_runtime.h"
 #include "share/schema/ob_table_schema.h"
 #include "sql/engine/expr/ob_obj_cast_runtime.h"
+#include "sql/engine/dml/ob_ai_column_runtime.h"
 
 namespace oceanbase
 {
@@ -1965,6 +1966,18 @@ int ObDDLResolver::resolve_column_definition(ObColumnSchemaV2 &column,
         }
       }
     }
+    if (OB_SUCC(ret) && OB_NOT_NULL(node->children_[2])) {
+      ParseNode *ai_clause = NULL;
+      ParseNode *ai_attrs = node->children_[2];
+      for (int64_t i = 0; i < ai_attrs->num_child_; ++i) {
+        if (OB_NOT_NULL(ai_attrs->children_[i]) && T_AI_COLUMN_CLAUSE == ai_attrs->children_[i]->type_) {
+          ai_clause = ai_attrs->children_[i];
+        }
+      }
+      if (OB_NOT_NULL(ai_clause) && OB_FAIL(ObAIColumnRuntime::resolve_clause(table_schema, column, ai_clause, type_node))) {
+        SQL_RESV_LOG(WARN, "resolve ai column clause failed", K(ret));
+      }
+    }
   }
   return ret;
 }
@@ -2284,6 +2297,9 @@ int ObDDLResolver::resolve_normal_column_attribute(ObColumnSchemaV2 &column,
       case T_VISIBLE:
       case T_INVISIBLE:
       {
+        break;
+      }
+      case T_AI_COLUMN_CLAUSE: {
         break;
       }
       default:  // won't be here

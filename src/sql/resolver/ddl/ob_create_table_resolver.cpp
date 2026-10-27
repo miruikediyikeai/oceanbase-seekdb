@@ -25,6 +25,7 @@
 #include "sql/optimizer/ob_optimizer_util.h"
 #include "query/vector/ob_vector_index_util.h"
 #include "sql/resolver/ddl/ob_vec_index_builder_util.h"
+#include "sql/engine/dml/ob_ai_column_runtime.h"
 
 namespace oceanbase
 {
@@ -828,6 +829,25 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
             } else {
               ObColumnNameHashWrapper name_key(tmp_col->get_column_name_str());
               if (OB_FAIL(column_name_set_.set_refactored(name_key))) {
+              } else if (ObAIColumnRuntime::is_ai_comment(column.get_comment())) {
+                const uint64_t state_id = gen_column_id();
+                const uint64_t request_id = gen_column_id();
+                const uint64_t spec_id = gen_column_id();
+                char state_name[128];
+                char request_name[128];
+                char spec_name[128];
+                if (OB_FAIL(ObAIColumnRuntime::add_create_hidden(table_schema, column.get_column_name(),
+                                                                 state_id, request_id, spec_id))) {
+                } else if (OB_FAIL(ObAIColumnRuntime::hidden_name(state_name, sizeof(state_name), "st",
+                                                                  column.get_column_name()))) {
+                } else if (OB_FAIL(ObAIColumnRuntime::hidden_name(request_name, sizeof(request_name), "rq",
+                                                                  column.get_column_name()))) {
+                } else if (OB_FAIL(ObAIColumnRuntime::hidden_name(spec_name, sizeof(spec_name), "sp",
+                                                                  column.get_column_name()))) {
+                } else if (OB_FAIL(column_name_set_.set_refactored(ObColumnNameHashWrapper(ObString(state_name))))) {
+                } else if (OB_FAIL(column_name_set_.set_refactored(ObColumnNameHashWrapper(ObString(request_name))))) {
+                } else if (OB_FAIL(column_name_set_.set_refactored(ObColumnNameHashWrapper(ObString(spec_name))))) {
+                }
               } else {
                 ret = OB_SUCCESS;
               }

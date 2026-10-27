@@ -40,6 +40,79 @@
 #include "../../../src/sql/parser/sql_parser_mysql_mode_lex.h"
 #include "../../../src/sql/parser/sql_parser_base.h"
 
+static int ob_ai_eq_cstr(const ParseNode *node, const char *name)
+{
+  int i = 0;
+  int n = 0;
+  if (NULL == node || NULL == node->str_value_ || NULL == name) {
+    return 0;
+  }
+  n = (int)strlen(name);
+  if (node->str_len_ != n) {
+    return 0;
+  }
+  for (i = 0; i < n; ++i) {
+    char a = node->str_value_[i];
+    char b = name[i];
+    if (a >= 'A' && a <= 'Z') {
+      a = (char)(a - 'A' + 'a');
+    }
+    if (b >= 'A' && b <= 'Z') {
+      b = (char)(b - 'A' + 'a');
+    }
+    if (a != b) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
+static void ob_ai_retarget_column(ParseNode *colref, ParseNode *ai_name)
+{
+  if (NULL == colref || NULL == ai_name) {
+    return;
+  }
+  if (colref->num_child_ >= 3) {
+    colref->children_[2] = ai_name;
+  }
+  colref->str_value_ = ai_name->str_value_;
+  colref->str_len_ = ai_name->str_len_;
+}
+
+static void ob_ai_rewrite_retry_status(ParseNode *node, ParseNode *ai_name)
+{
+  int i = 0;
+  if (NULL == node) {
+    return;
+  }
+  if (T_OP_EQ == node->type_ && 2 == node->num_child_
+      && NULL != node->children_[0] && T_COLUMN_REF == node->children_[0]->type_
+      && NULL != node->children_[1]) {
+    ParseNode *name = NULL;
+    ParseNode *colref = node->children_[0];
+    if (colref->num_child_ >= 3) {
+      name = colref->children_[2];
+    }
+    if (NULL != name && 0 == name->is_input_quoted_ && ob_ai_eq_cstr(name, "status")) {
+      ParseNode *right = node->children_[1];
+      if (ob_ai_eq_cstr(right, "FAILED")) {
+        ob_ai_retarget_column(colref, ai_name);
+        right->type_ = T_NULL;
+        node->type_ = T_OP_IS;
+      } else if (ob_ai_eq_cstr(right, "READY")) {
+        ob_ai_retarget_column(colref, ai_name);
+        right->type_ = T_NULL;
+        node->type_ = T_OP_IS_NOT;
+      }
+    }
+  }
+  if (NULL != node->children_) {
+    for (i = 0; i < node->num_child_; ++i) {
+      ob_ai_rewrite_retry_status(node->children_[i], ai_name);
+    }
+  }
+}
+
 #define GEN_EXPLAN_STMT(no_use, explain_stmt, explain_type, display_type, stmt, into_table, set_statement_id) \
   (void)(no_use); \
   ParseNode *type_node = NULL; \
@@ -333,7 +406,7 @@ END_P SET_VAR DELIMITER
         QUANTIFIER_TABLE QUARTER QUERY QUEUE_TIME QUICK
 
         RECOVER REDUNDANT REFRESH RELAY RELAYLOG RELAY_LOG_FILE RELAY_LOG_POS RELAY_THREAD RELOAD REMOVE
-        REPEATABLE RESET RESPECT RESTART RESTORE RESUME RETURNED_SQLSTATE RETURNS RETURNING REVERSE
+        REPEATABLE RESET RETRY RESPECT RESTART RESTORE RESUME RETURNED_SQLSTATE RETURNS RETURNING REVERSE
         REWRITE ROLLBACK ROLLUP ROUTINE ROW ROWID ROW_COUNT ROW_FORMAT ROWS RTREE
         RUN RECYCLEBIN REPLICATION ROTATE ROW_NUMBER RUDUNDANT RECURSIVE RANDOM REDO_TRANSPORT_OPTIONS
         RANK READ_ONLY RECOVERY REJECT ROLE
@@ -6158,8 +6231,37 @@ column_attribute_list column_attribute
   $$ = $1;
 }
 
+ai_col_opt_list:
+ai_col_opt
+{
+  $$ = $1;
+}
+| ai_col_opt_list ',' ai_col_opt
+{
+  malloc_non_terminal_node($$, result->malloc_pool_, T_LINK_NODE, 2, $1, $3);
+}
+;
+
+ai_col_opt:
+NAME_OB COMP_EQ STRING_VALUE
+{
+  malloc_non_terminal_node($$, result->malloc_pool_, T_ASSIGN_ITEM, 2, $1, $3);
+}
+| NAME_OB COMP_EQ INTNUM
+{
+  malloc_non_terminal_node($$, result->malloc_pool_, T_ASSIGN_ITEM, 2, $1, $3);
+}
+;
+
 column_attribute:
-not NULLX
+AI COLUMN '(' expr ')' WITH '(' ai_col_opt_list ')'
+{
+  ParseNode *opts = NULL;
+  dup_expr_string($4, result, @4.first_column, @4.last_column);
+  merge_nodes(opts, result, T_EXPR_LIST, $8);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_AI_COLUMN_CLAUSE, 2, $4, opts);
+}
+| not NULLX
 {
   (void)($1) ;
   (void)($2) ; /* make bison mute */
@@ -14957,8 +15059,40 @@ alter_with_opt_hint TABLE relation_factor alter_table_actions
 {
   ParseNode *table_actions = NULL;
   merge_nodes(table_actions, result, T_ALTER_TABLE_ACTION_LIST, $4);
-  malloc_non_terminal_node($$, result->malloc_pool_, T_ALTER_TABLE, 4, $3, table_actions, NULL, $1);
-  $$->value_ = 0;
+  if (NULL != table_actions && 1 == table_actions->num_child_
+      && NULL != table_actions->children_[0]
+      && T_ALTER_AI_COLUMN_RETRY == table_actions->children_[0]->type_) {
+    ParseNode *retry = table_actions->children_[0];
+    ParseNode *col = retry->children_[0];
+    ParseNode *where_node = retry->num_child_ > 1 ? retry->children_[1] : NULL;
+    ParseNode *tbl = NULL;
+    ParseNode *tables = NULL;
+    ParseNode *null_node = NULL;
+    ParseNode *colref = NULL;
+    ParseNode *asgn = NULL;
+    ParseNode *asgn_list = NULL;
+    if (NULL != where_node && T_WHERE_CLAUSE == where_node->type_
+        && where_node->num_child_ > 0 && NULL != where_node->children_[0]) {
+      ob_ai_rewrite_retry_status(where_node->children_[0], col);
+    }
+    malloc_non_terminal_node(tbl, result->malloc_pool_, T_ORG, 4, $3, NULL, NULL, NULL);
+    malloc_non_terminal_node(tables, result->malloc_pool_, T_LINK_NODE, 1, tbl);
+    merge_nodes(tables, result, T_TABLE_REFERENCES, tables);
+    malloc_terminal_node(null_node, result->malloc_pool_, T_NULL);
+    malloc_non_terminal_node(colref, result->malloc_pool_, T_COLUMN_REF, 3, NULL, NULL, col);
+    colref->str_value_ = col->str_value_;
+    colref->str_len_ = col->str_len_;
+    malloc_non_terminal_node(asgn, result->malloc_pool_, T_ASSIGN_ITEM, 2, colref, null_node);
+    malloc_non_terminal_node(asgn_list, result->malloc_pool_, T_LINK_NODE, 1, asgn);
+    merge_nodes(asgn_list, result, T_ASSIGN_LIST, asgn_list);
+    malloc_non_terminal_node($$, result->malloc_pool_, T_UPDATE, 11,
+                             NULL, tables, asgn_list, where_node,
+                             NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    $$->value_ = 4922;
+  } else {
+    malloc_non_terminal_node($$, result->malloc_pool_, T_ALTER_TABLE, 4, $3, table_actions, NULL, $1);
+    $$->value_ = 0;
+  }
 }
 ;
 
@@ -14992,7 +15126,11 @@ alter_table_action
 ;
 
 alter_table_action:
-opt_set table_option_list_space_seperated
+RETRY AI COLUMN column_name opt_where
+{
+  malloc_non_terminal_node($$, result->malloc_pool_, T_ALTER_AI_COLUMN_RETRY, 2, $4, $5);
+}
+| opt_set table_option_list_space_seperated
 {
   (void)$1;
   merge_nodes($$, result, T_TABLE_OPTION_LIST, $2);
@@ -18261,6 +18399,7 @@ ACCOUNT
 |       REPEATABLE
 |       REPLICATION
 |       RESET
+|       RETRY
 |       RESPECT
 |       RESTART
 |       RESTORE

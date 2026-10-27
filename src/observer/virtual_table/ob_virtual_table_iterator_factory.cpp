@@ -160,6 +160,8 @@
 #include "observer/virtual_table/ob_all_virtual_vector_index_info.h"
 #include "observer/virtual_table/ob_all_virtual_tmp_file.h"
 #include "observer/virtual_table/ob_all_virtual_dml_stats.h"
+#include "observer/virtual_table/ob_all_ai_column.h"
+#include "observer/virtual_table/ob_all_ai_column_task.h"
 #include "observer/virtual_table/ob_all_virtual_change_stream_refresh_stat.h"
 #include "observer/virtual_table/ob_all_virtual_vector_mem_info.h"
 
@@ -1699,6 +1701,24 @@ int ObVTIterCreator::create_vt_iter(ObVTableScanParam &params,
             } else {
               all_virtual_vector_index_info->set_addr(addr_);
               vt_iter = static_cast<ObVirtualTableIterator *>(all_virtual_vector_index_info);
+            }
+            break;
+          }
+          case OB_ALL_AI_COLUMN_TID:
+          {
+            ObAllAIColumn *all_ai_column = NULL;
+            if (OB_FAIL(NEW_VIRTUAL_TABLE(ObAllAIColumn, all_ai_column))) {
+            } else {
+              vt_iter = static_cast<ObVirtualTableIterator *>(all_ai_column);
+            }
+            break;
+          }
+          case OB_ALL_AI_COLUMN_TASK_TID:
+          {
+            ObAllAIColumnTask *all_ai_column_task = NULL;
+            if (OB_FAIL(NEW_VIRTUAL_TABLE(ObAllAIColumnTask, all_ai_column_task))) {
+            } else {
+              vt_iter = static_cast<ObVirtualTableIterator *>(all_ai_column_task);
             }
             break;
           }

@@ -18,6 +18,7 @@
 
 #include "config_bridge.h"
 #include "sql/engine/dml/ob_table_insert_op.h"
+#include "sql/engine/dml/ob_ai_column_runtime.h"
 #include "sql/engine/dml/ob_dml_service.h"
 
 
@@ -225,6 +226,8 @@ OB_INLINE int ObTableInsertOp::insert_row_to_das()
       } else if (OB_FAIL(ObDMLService::set_heap_table_hidden_pk(ins_ctdef,
                                                                 tablet_loc->tablet_id_,
                                                                 eval_ctx_))) {
+      } else if (ins_ctdef.is_primary_index_ &&
+                 OB_FAIL(ObAIColumnRuntime::on_insert(ctx_, ins_ctdef, eval_ctx_))) {
       } else if (OB_FAIL(ObDMLService::insert_row(ins_ctdef, ins_rtdef, tablet_loc, dml_rtctx_, modify_row.new_row_))) {
       } else if (need_after_row_process(ins_ctdef) && OB_FAIL(dml_modify_rows_.push_back(modify_row))) {
       }

@@ -16,6 +16,8 @@
 
 #define USING_LOG_PREFIX SQL_RESV
 #include "sql/resolver/dml/ob_update_resolver.h"
+#include "sql/engine/dml/ob_ai_column_runtime.h"
+#include "sql/resolver/expr/ob_raw_expr_util.h"
 
 namespace oceanbase
 {
@@ -107,7 +109,8 @@ int ObUpdateResolver::resolve(const ParseNode &parse_tree)
 
   if (OB_SUCC(ret)) {
     // Parse cascading update columns
-    if (OB_FAIL(resolve_additional_assignments(tables_assign,
+    if (OB_FAIL(expand_ai_column_assignments(tables_assign, 4922 == parse_tree.value_))) {
+    } else if (OB_FAIL(resolve_additional_assignments(tables_assign,
                                                T_UPDATE_SCOPE))) {
     }
   }
@@ -533,6 +536,128 @@ int ObUpdateResolver::resolve_update_constraints()
           }
         }
       }
+    }
+  }
+  return ret;
+}
+
+int ObUpdateResolver::expand_ai_column_assignments(ObIArray<ObTableAssignment> &tables_assign,
+                                                   bool retry_mode)
+{
+  int ret = OB_SUCCESS;
+  ObUpdateStmt *update_stmt = get_update_stmt();
+  for (int64_t t = 0; OB_SUCC(ret) && t < tables_assign.count(); ++t) {
+    ObTableAssignment &ta = tables_assign.at(t);
+    const ObTableSchema *table_schema = NULL;
+    TableItem *table_item = NULL;
+    bool rowkey_assigned = false;
+    if (OB_ISNULL(update_stmt) || OB_ISNULL(schema_checker_) || OB_ISNULL(params_.expr_factory_)) {
+      ret = OB_ERR_UNEXPECTED;
+    } else if (OB_ISNULL(table_item = update_stmt->get_table_item_by_id(ta.table_id_))) {
+      ret = OB_ERR_UNEXPECTED;
+    } else if (OB_FAIL(schema_checker_->get_table_schema(ta.table_id_, table_schema))) {
+    } else if (OB_ISNULL(table_schema)) {
+      ret = OB_ERR_UNEXPECTED;
+    }
+    for (int64_t i = 0; OB_SUCC(ret) && i < ta.assignments_.count(); ++i) {
+      ObAssignment &asgn = ta.assignments_.at(i);
+      const ObColumnSchemaV2 *col = NULL;
+      if (asgn.is_implicit_ || OB_ISNULL(asgn.column_expr_)) {
+        continue;
+      }
+      col = table_schema->get_column_schema(asgn.column_expr_->get_column_id());
+      if (OB_NOT_NULL(col) && col->get_rowkey_position() > 0) {
+        rowkey_assigned = true;
+      }
+      if (retry_mode && (OB_ISNULL(col) || !ObAIColumnRuntime::is_ai_comment(col->get_comment()))) {
+        ret = OB_NOT_SUPPORTED;
+        LOG_USER_ERROR(OB_NOT_SUPPORTED, "retrying a column that is not an AI column");
+      }
+    }
+    if (OB_SUCC(ret) && OB_NOT_NULL(table_schema)) {
+    for (ObTableSchema::const_column_iterator it = table_schema->column_begin();
+         OB_SUCC(ret) && it != table_schema->column_end(); ++it) {
+      const ObColumnSchemaV2 *ai_col = *it;
+      bool assigned = false;
+      bool depend = false;
+      char request_name[128];
+      const ObColumnSchemaV2 *request_col = NULL;
+      if (OB_ISNULL(ai_col) || !ObAIColumnRuntime::is_ai_comment(ai_col->get_comment())) {
+        continue;
+      }
+      for (int64_t i = 0; i < ta.assignments_.count(); ++i) {
+        ObAssignment &asgn = ta.assignments_.at(i);
+        const ObColumnSchemaV2 *col = NULL;
+        if (OB_ISNULL(asgn.column_expr_)) {
+          continue;
+        }
+        if (asgn.column_expr_->get_column_id() == ai_col->get_column_id()) {
+          assigned = true;
+        }
+        col = table_schema->get_column_schema(asgn.column_expr_->get_column_id());
+        if (!asgn.is_implicit_ && OB_NOT_NULL(col)
+            && ObAIColumnRuntime::comment_depends_on(ai_col->get_comment(), col->get_column_name_str())) {
+          depend = true;
+        }
+      }
+      if (OB_FAIL(ObAIColumnRuntime::hidden_name(request_name, sizeof(request_name), "rq",
+                                                 ai_col->get_column_name()))) {
+      } else if (OB_ISNULL(request_col = table_schema->get_column_schema(request_name))) {
+        ret = OB_ERR_UNEXPECTED;
+      } else if (retry_mode) {
+        if (!assigned) {
+          continue;
+        }
+      } else if (assigned || (!depend && !rowkey_assigned)) {
+        continue;
+      } else {
+        ObAssignment null_asgn;
+        ObSEArray<ObColumnRefRawExpr *, 1> col_exprs;
+        ObRawExpr *null_expr = NULL;
+        ColumnItem *col_item = NULL;
+        if (OB_FAIL(add_column_to_stmt(*table_item, *ai_col, col_exprs))) {
+        } else if (col_exprs.empty()
+                   || OB_ISNULL(col_item = update_stmt->get_column_item_by_id(
+                          table_item->table_id_, col_exprs.at(0)->get_column_id()))) {
+          ret = OB_ERR_UNEXPECTED;
+        } else if (OB_FAIL(ObRawExprUtils::build_null_expr(*params_.expr_factory_, null_expr))) {
+        } else {
+          null_asgn.column_expr_ = col_item->expr_;
+          null_asgn.expr_ = null_expr;
+          null_asgn.is_implicit_ = true;
+          if (OB_FAIL(ta.assignments_.push_back(null_asgn))) {
+          }
+        }
+      }
+      if (OB_SUCC(ret) && (retry_mode ? assigned : (depend || rowkey_assigned) && !assigned)) {
+        bool request_assigned = false;
+        for (int64_t i = 0; i < ta.assignments_.count(); ++i) {
+          if (OB_NOT_NULL(ta.assignments_.at(i).column_expr_)
+              && ta.assignments_.at(i).column_expr_->get_column_id() == request_col->get_column_id()) {
+            request_assigned = true;
+          }
+        }
+        if (!request_assigned) {
+          ObAssignment req_asgn;
+          ObSEArray<ObColumnRefRawExpr *, 1> col_exprs;
+          ObConstRawExpr *int_expr = NULL;
+          ColumnItem *col_item = NULL;
+          if (OB_FAIL(add_column_to_stmt(*table_item, *request_col, col_exprs))) {
+          } else if (col_exprs.empty()
+                     || OB_ISNULL(col_item = update_stmt->get_column_item_by_id(
+                            table_item->table_id_, col_exprs.at(0)->get_column_id()))) {
+            ret = OB_ERR_UNEXPECTED;
+          } else if (OB_FAIL(ObRawExprUtils::build_const_int_expr(*params_.expr_factory_, ObIntType, 0, int_expr))) {
+          } else {
+            req_asgn.column_expr_ = col_item->expr_;
+            req_asgn.expr_ = int_expr;
+            req_asgn.is_implicit_ = true;
+            if (OB_FAIL(ta.assignments_.push_back(req_asgn))) {
+            }
+          }
+        }
+      }
+    }
     }
   }
   return ret;

@@ -6385,6 +6385,45 @@ def_table_schema(
   ],
 )
 
+# 12565: __all_ai_column
+def_table_schema(
+  owner = 'seekdb',
+  table_name    = '__all_ai_column',
+  table_id      = '12565',
+  table_type = 'VIRTUAL_TABLE',
+  gm_columns = [],
+  rowkey_columns = [],
+  normal_columns = [
+    ('column_name', 'varchar:128'),
+    ('max_retries', 'int'),
+    ('column_id', 'int'),
+    ('state_column_id', 'int'),
+    ('request_column_id', 'int'),
+    ('result_spec_column_id', 'int'),
+    ('normalized_expr', 'varchar:16384'),
+    ('table_id', 'int'),
+  ],
+)
+
+# 12566: __all_ai_column_task
+def_table_schema(
+  owner = 'seekdb',
+  table_name    = '__all_ai_column_task',
+  table_id      = '12566',
+  table_type = 'VIRTUAL_TABLE',
+  gm_columns = [],
+  rowkey_columns = [],
+  normal_columns = [
+    ('table_id', 'int'),
+    ('column_id', 'int'),
+    ('request_id', 'int'),
+    ('rowkey_predicate', 'varchar:1024'),
+    ('eligible_ts', 'timestamp'),
+    ('state', 'int'),
+    ('retry_count', 'int'),
+  ],
+)
+
 # Reserved position (placeholder before this line)
 # Placeholder suggestion for this section: Use actual table names for placeholders
 ################################################################################
