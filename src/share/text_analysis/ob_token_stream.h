@@ -132,6 +132,9 @@ public:
   virtual int get_next(ObDatum &next_token, int64_t &token_freq) override;
 private:
   ObArenaAllocator norm_allocator_;
+  // ASCII tokens are lowercased here so the next token does not allocate.
+  // Bytes stay valid until the following get_next, same as norm_allocator_.
+  char lower_buf_[128];
 };
 
 // group (deduplicate) and count

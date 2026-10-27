@@ -292,6 +292,33 @@ int ObBasicEnglishNormalizer::get_next(ObDatum &next_token, int64_t &token_freq)
     if (OB_FAIL(ret)) {
     } else if (OB_UNLIKELY(!found_alnum)) {
       ret = OB_ERR_UNEXPECTED;
+    } else if (norm_token_len <= sizeof(lower_buf_)) {
+      bool plain_ascii = true;
+      for (uint32_t i = 0; plain_ascii && i < norm_token_len; ++i) {
+        const unsigned char c = static_cast<unsigned char>(norm_token_ptr[i]);
+        // Turkish collation maps ASCII 'I' to U+0131. Every other ASCII letter
+        // lowercases to itself plus 32, in every charset this server ships.
+        if (c >= 0x80 || c == 'I') {
+          plain_ascii = false;
+        }
+      }
+      if (!plain_ascii) {
+        ObString norm_alnum_token(norm_token_len, norm_token_ptr);
+        ObString norm_lower_token;
+        if (OB_FAIL(ObCharset::tolower(cs_, norm_alnum_token, norm_lower_token, norm_allocator_))) {
+        } else {
+          next_token.set_string(norm_lower_token);
+        }
+      } else {
+        for (uint32_t i = 0; i < norm_token_len; ++i) {
+          unsigned char c = static_cast<unsigned char>(norm_token_ptr[i]);
+          if (c >= 'A' && c <= 'Z') {
+            c = static_cast<unsigned char>(c - 'A' + 'a');
+          }
+          lower_buf_[i] = static_cast<char>(c);
+        }
+        next_token.set_string(lower_buf_, norm_token_len);
+      }
     } else {
       ObString norm_alnum_token(norm_token_len, norm_token_ptr);
       ObString norm_lower_token;

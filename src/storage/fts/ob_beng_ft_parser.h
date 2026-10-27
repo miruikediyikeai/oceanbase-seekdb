@@ -34,7 +34,7 @@ public:
   static const int64_t FT_MAX_WORD_LEN = 84;
 public:
   explicit ObBEngFTParser(common::ObIAllocator &allocator)
-    : allocator_(allocator),
+    : allocator_(&allocator),
       analysis_ctx_(),
       english_analyzer_(),
       doc_(),
@@ -57,7 +57,7 @@ private:
       const common::ObDatum &doc,
       share::ObITokenStream *&token_stream);
 private:
-  common::ObIAllocator &allocator_;
+  common::ObIAllocator *allocator_;
   share::ObTextAnalysisCtx analysis_ctx_;
   share::ObEnglishTextAnalyzer english_analyzer_;
   common::ObDatum doc_;

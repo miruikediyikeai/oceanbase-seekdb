@@ -46,13 +46,23 @@ public:
         cache_stop_(allocator),
         dict_main_(nullptr),
         dict_quan_(nullptr),
-        dict_stop_(nullptr)
+        dict_stop_(nullptr),
+        doc_allocator_(nullptr),
+        doc_seg_cnt_(0),
+        dict_ready_(false)
   {
+    doc_segs_[0] = nullptr;
+    doc_segs_[1] = nullptr;
+    doc_segs_[2] = nullptr;
+    doc_segs_[3] = nullptr;
   }
 
   virtual ~ObIKFTParser() { reset(); }
 
   int init(const ObFTParserParam &param);
+  // Keep dicts on the parser allocator and rebuild only the document context.
+  int open_document(const ObFTParserParam &param, common::ObIAllocator &doc_alloc);
+  void finish_document();
 
   int get_next_token(const char *&word,
                      int64_t &word_len,
@@ -88,6 +98,9 @@ private:
                             ObFTCacheRangeContainer &container,
                             ObIFTDict *&dict);
 
+  void free_doc_state();
+  common::ObIAllocator &active_alloc();
+
 private:
   static constexpr int SEGMENT_LIMIT = 1000;
   ObIAllocator &allocator_;
@@ -106,6 +119,12 @@ private:
   ObIFTDict *dict_main_;
   ObIFTDict *dict_quan_;
   ObIFTDict *dict_stop_;
+
+  // Document-scoped context and segmenters. Dicts stay on allocator_.
+  common::ObIAllocator *doc_allocator_;
+  ObIIKProcessor *doc_segs_[4];
+  int64_t doc_seg_cnt_;
+  bool dict_ready_;
 
   DISABLE_COPY_ASSIGN(ObIKFTParser);
 };

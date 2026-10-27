@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "lib/allocator/page_arena.h"
+#include "lib/charset/ob_charset.h"
 #include "object/ob_object.h"
 #define USING_LOG_PREFIX STORAGE_FTS
 
@@ -71,25 +73,70 @@ void ObStopWordChecker::destroy()
   }
 }
 
+int convert_stopword_slow(const common::ObString &src,
+                          const ObCollationType src_coll,
+                          const ObCollationType dst_coll,
+                          common::ObString &out)
+{
+  static thread_local common::ObArenaAllocator alloc(lib::ObMemAttr("SwConvert"));
+  alloc.reuse();
+  return common::ObCharset::charset_convert(alloc, src, src_coll, dst_coll, out);
+}
+
 int ObStopWordChecker::check_stopword(const ObFTWord &word, bool &is_stopword)
 {
   int ret = OB_SUCCESS;
-  
-  
-  common::ObArenaAllocator allocator(lib::ObMemAttr("ChkStopWord"));
   if (OB_UNLIKELY(!inited_)) {
     ret = OB_NOT_INIT;
   } else if (OB_UNLIKELY(word.empty())) {
     ret = OB_INVALID_ARGUMENT;
   } else {
+    const common::ObString src = word.get_word().get_string();
+    const ObCollationType src_coll = word.get_collation_type();
+    const ObCollationType dst_coll = stopword_type_.get_collation_type();
     common::ObString cmp_str;
-    // do nothing set out with in if type is the same.
-    if (OB_FAIL(common::ObCharset::charset_convert(
-                                       allocator,
-                                       word.get_word().get_string(),
-                                       word.get_collation_type(),
-                                       stopword_type_.get_collation_type(),
-                                       cmp_str))) {
+    char convert_buf[FTS_STOP_WORD_MAX_LENGTH * 4];
+    bool decided = false;
+    if (src.length() <= 0) {
+      ret = OB_INVALID_ARGUMENT;
+    } else if (common::ObCharset::charset_type_by_coll(src_coll)
+               == common::ObCharset::charset_type_by_coll(dst_coll)) {
+      if (src.length() > FTS_STOP_WORD_MAX_LENGTH) {
+        is_stopword = false;
+        decided = true;
+      } else {
+        cmp_str = src;
+      }
+    } else {
+      int64_t maxmb = 1;
+      if (OB_FAIL(common::ObCharset::get_mbmaxlen_by_coll(dst_coll, maxmb))) {
+      } else if (maxmb < 1) {
+        ret = OB_ERR_UNEXPECTED;
+      } else if (src.length() > 0
+                 && src.length() * maxmb > static_cast<int64_t>(sizeof(convert_buf))) {
+        if (OB_FAIL(convert_stopword_slow(src, src_coll, dst_coll, cmp_str))) {
+        } else if (cmp_str.length() > FTS_STOP_WORD_MAX_LENGTH) {
+          is_stopword = false;
+          decided = true;
+        }
+      } else {
+        uint32_t result_len = 0;
+        if (OB_FAIL(common::ObCharset::charset_convert(src_coll,
+                                                       src.ptr(),
+                                                       static_cast<uint32_t>(src.length()),
+                                                       dst_coll,
+                                                       convert_buf,
+                                                       sizeof(convert_buf),
+                                                       result_len))) {
+        } else if (result_len > FTS_STOP_WORD_MAX_LENGTH) {
+          is_stopword = false;
+          decided = true;
+        } else {
+          cmp_str.assign_ptr(convert_buf, result_len);
+        }
+      }
+    }
+    if (OB_FAIL(ret) || decided) {
     } else {
       ObFTWord converted(cmp_str.length(), cmp_str.ptr(), stopword_type_);
       ret = stopword_set_.exist_refactored(converted);
@@ -164,15 +211,42 @@ int ObAddWord::casedown_word(const ObFTWord &src, ObFTWord &dst)
   if (OB_UNLIKELY(src.empty())) {
     ret = OB_INVALID_ARGUMENT;
   } else if (flag_.casedown()) {
-    ObString dst_str;
-    if (OB_FAIL(ObCharset::tolower(
-                    word_meta_.get_collation_type(),
-                    src.get_word().get_string(),
-                    dst_str,
-                    allocator_))) {
+    const ObString src_str = src.get_word().get_string();
+    bool plain_ascii = true;
+    for (int64_t i = 0; plain_ascii && i < src_str.length(); ++i) {
+      const unsigned char c = static_cast<unsigned char>(src_str.ptr()[i]);
+      if (c >= 0x80 || c == 'I') {
+        plain_ascii = false;
+      }
+    }
+    if (!plain_ascii) {
+      ObString dst_str;
+      if (OB_FAIL(ObCharset::tolower(
+                      word_meta_.get_collation_type(),
+                      src_str,
+                      dst_str,
+                      allocator_))) {
+      } else {
+        ObFTWord tmp(dst_str.length(), dst_str.ptr(), word_meta_);
+        dst = tmp;
+      }
+    } else if (OB_ISNULL(src_str.ptr())) {
+      ret = OB_INVALID_ARGUMENT;
     } else {
-      ObFTWord tmp(dst_str.length(), dst_str.ptr(), word_meta_);
-      dst = tmp;
+      char *buf = static_cast<char *>(allocator_.alloc(src_str.length()));
+      if (OB_ISNULL(buf)) {
+        ret = OB_ALLOCATE_MEMORY_FAILED;
+      } else {
+        for (int64_t i = 0; i < src_str.length(); ++i) {
+          unsigned char c = static_cast<unsigned char>(src_str.ptr()[i]);
+          if (c >= 'A' && c <= 'Z') {
+            c = static_cast<unsigned char>(c - 'A' + 'a');
+          }
+          buf[i] = static_cast<char>(c);
+        }
+        ObFTWord tmp(src_str.length(), buf, word_meta_);
+        dst = tmp;
+      }
     }
   } else {
     dst = src;
