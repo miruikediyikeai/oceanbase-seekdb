@@ -243,7 +243,7 @@ END_P SET_VAR DELIMITER
         NATURAL NOT NO_WRITE_TO_BINLOG /*NULL*/ NUMERIC
         ON OPTIMIZE /*OPTIMIZER_COSTS*/ OPTION OPTIONALLY OR ORDER OUT OUTER OUTFILE
         PARTITION PRECISION PRIMARY PROCEDURE PURGE
-        RANGE READ READS READ_WRITE REAL REFERENCES REGEXP RELEASE RENAME REPEAT REPLACE REQUIRE
+        RANGE READ READS READ_CSV READ_JSON READ_PARQUET READ_WRITE REAL REFERENCES REGEXP RELEASE RENAME REPEAT REPLACE REQUIRE
         RESIGNAL RESTRICT RETURN REVOKE RIGHT RLIKE
         SCHEMA SCHEMAS SECOND_MICROSECOND SELECT SENSITIVE SEPARATOR SET SHOW SIGNAL SMALLINT SPATIAL
         SPECIFIC SQL SQLEXCEPTION SQLSTATE SQLWARNING SQL_BIG_RESULT SQL_CALC_FOUND_ROWS
@@ -289,10 +289,10 @@ END_P SET_VAR DELIMITER
         FOUND FORK FREEZE FREQUENCY FUNCTION FOLLOWING FLASHBACK FULL FRAGMENTATION FROZEN FILE_ID FILTER
         FIELD_OPTIONALLY_ENCLOSED_BY FIELD_DELIMITER FIELD_ENCLOSED_BY FILE_EXTENSION
 
-        GENERAL GEOMETRY GEOMCOLLECTION GEOMETRYCOLLECTION GET_FORMAT GLOBAL GRANTS GROUP_CONCAT GROUPING
+        GENERAL GEOMETRY GEOMCOLLECTION GEOMETRYCOLLECTION GET_FORMAT GLOBAL GLOB GRANTS GROUP_CONCAT GROUPING
         GLOBAL_ALIAS
 
-        HASH HEAP HELP HISTOGRAM HOUR HIDDEN HYBRID HYBRID_HIST HYBRID_SEARCH
+        HASH HEADER HEAP HELP HISTOGRAM HOUR HIDDEN HYBRID HYBRID_HIST HYBRID_SEARCH
 
         IDENTIFIED IK_MODE ILOG IMMEDIATE IMPORT INCLUDING INCR INDEXES INFO
         INNODB INPLACE INSERT_METHOD INSTANT INSTANCE INVOKER IO IO_THREAD IPC ISOLATE ISOLATION ISSUER
@@ -316,7 +316,7 @@ END_P SET_VAR DELIMITER
         MODIFY MODULE MONTH MOVE MODEL MULTILINESTRING MULTIPOINT MULTIPOLYGON MULTIVALUE MUTEX
         MYSQL_ERRNO MAXIMIZE MEMBER MINVALUE MY_NAME
 
-        NAME NAMES NAMESPACE NATIONAL NCHAR NDB NDBCLUSTER NESTED NEW NEXT NO NOAUDIT NONE NORMAL NOW NOWAIT NEVER NGRAM_TOKEN_SIZE
+        NAME NAMES NAMESPACE NATIONAL NCHAR NDB NDBCLUSTER NESTED NEW NEXT NO NOAUDIT NONE NORMAL NOW NOWAIT NULLSTR NEVER NGRAM_TOKEN_SIZE
         NO_WAIT NULLS NUMBER NVARCHAR NTILE NTH_VALUE NETWORK NOPARALLEL
         NULL_IF_EXETERNAL
 
@@ -498,6 +498,7 @@ END_P SET_VAR DELIMITER
 %type <node> skip_index_type opt_skip_index_type_list
 %type <node> vec_index_params vec_index_param vec_index_param_value opt_with_vector_index_parameters
 %type <node> json_table_expr unnest_expr mock_jt_on_error_on_empty jt_column_list json_table_column_def
+%type <node> file_table_expr file_named_opt_list file_named_opt file_opt_value copy_opt_list copy_opt
 %type <node> json_table_ordinality_column_def json_table_exists_column_def json_table_value_column_def json_table_nested_column_def
 %type <node> opt_value_on_empty_or_error_or_mismatch opt_on_mismatch
 %type <node> table_values_clause table_values_clause_with_order_by_and_limit values_row_list row_value
@@ -556,6 +557,25 @@ opt_end_p:
 /* only preparable statement will set question mark size */
 stmt:
     select_stmt             { $$ = $1; question_mark_issue($$, result); }
+  | COPY '(' select_clause ')' TO STRING_VALUE '(' copy_opt_list ')'
+    {
+      ParseNode *format_list = NULL;
+      ParseNode *into_node = NULL;
+      merge_nodes(format_list, result, T_EXTERNAL_FILE_FORMAT, $8);
+      malloc_non_terminal_node(into_node, result->malloc_pool_, T_INTO_OUTFILE, 3, $6, format_list, NULL);
+      $$ = $3;
+      if (NULL == $$ || T_SELECT != $$->type_ || NULL == $$->children_ ||
+          $$->num_child_ <= PARSE_SELECT_INTO_EXTRA) {
+        yyerror(&@1, result, "copy into");
+        YYERROR;
+      } else if (NULL != $$->children_[PARSE_SELECT_INTO_EXTRA]) {
+        yyerror(&@1, result, "copy into");
+        YYERROR;
+      } else {
+        $$->children_[PARSE_SELECT_INTO_EXTRA] = into_node;
+      }
+      question_mark_issue($$, result);
+    }
   | insert_stmt             { $$ = $1; question_mark_issue($$, result); }
   | create_table_stmt       {
     $$ = $1;
@@ -10787,6 +10807,282 @@ table_factor
 }
 ;
 
+file_opt_value:
+BOOL_VALUE
+{
+  $$ = $1;
+}
+| INTNUM
+{
+  $$ = $1;
+}
+| '-' INTNUM
+{
+  $2->value_ = -$2->value_;
+  $$ = $2;
+}
+| STRING_VALUE
+{
+  $$ = $1;
+}
+;
+
+file_named_opt:
+NAME_OB COMP_EQ file_opt_value
+{
+  malloc_non_terminal_node($$, result->malloc_pool_, T_EXPR_LIST, 2, $1, $3);
+}
+| HEADER COMP_EQ file_opt_value
+{
+  ParseNode *name_node = NULL;
+  make_name_node(name_node, result->malloc_pool_, "header");
+  malloc_non_terminal_node($$, result->malloc_pool_, T_EXPR_LIST, 2, name_node, $3);
+}
+| FORMAT COMP_EQ file_opt_value
+{
+  ParseNode *name_node = NULL;
+  make_name_node(name_node, result->malloc_pool_, "format");
+  malloc_non_terminal_node($$, result->malloc_pool_, T_EXPR_LIST, 2, name_node, $3);
+}
+;
+
+file_named_opt_list:
+file_named_opt
+{
+  $$ = $1;
+}
+| file_named_opt_list ',' file_named_opt
+{
+  malloc_non_terminal_node($$, result->malloc_pool_, T_LINK_NODE, 2, $1, $3);
+}
+;
+
+copy_opt:
+FORMAT NAME_OB
+{
+  malloc_non_terminal_node($$, result->malloc_pool_, T_EXTERNAL_FILE_FORMAT_TYPE, 1, $2);
+}
+| HEADER
+{
+  ParseNode *flag_node = NULL;
+  malloc_terminal_node(flag_node, result->malloc_pool_, T_INT);
+  flag_node->value_ = 1;
+  malloc_non_terminal_node($$, result->malloc_pool_, T_PARSE_HEADER, 1, flag_node);
+}
+| NULLSTR STRING_VALUE
+{
+  ParseNode *list_node = NULL;
+  malloc_non_terminal_node(list_node, result->malloc_pool_, T_EXPR_LIST, 1, $2);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_NULL_IF_EXETERNAL, 1, list_node);
+}
+;
+
+copy_opt_list:
+copy_opt
+{
+  $$ = $1;
+}
+| copy_opt_list ',' copy_opt
+{
+  malloc_non_terminal_node($$, result->malloc_pool_, T_LINK_NODE, 2, $1, $3);
+}
+;
+
+file_table_expr:
+READ_CSV '(' STRING_VALUE ')'
+{
+  ParseNode *kind_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 1;
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, NULL, NULL);
+}
+| READ_CSV '(' STRING_VALUE ')' relation_name
+{
+  ParseNode *kind_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 1;
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, NULL, $5);
+}
+| READ_CSV '(' STRING_VALUE ')' AS relation_name
+{
+  ParseNode *kind_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 1;
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, NULL, $6);
+}
+| READ_CSV '(' STRING_VALUE ',' file_named_opt_list ')'
+{
+  ParseNode *kind_node = NULL;
+  ParseNode *opt_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 1;
+  merge_nodes(opt_node, result, T_EXPR_LIST, $5);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, opt_node, NULL);
+}
+| READ_CSV '(' STRING_VALUE ',' file_named_opt_list ')' relation_name
+{
+  ParseNode *kind_node = NULL;
+  ParseNode *opt_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 1;
+  merge_nodes(opt_node, result, T_EXPR_LIST, $5);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, opt_node, $7);
+}
+| READ_CSV '(' STRING_VALUE ',' file_named_opt_list ')' AS relation_name
+{
+  ParseNode *kind_node = NULL;
+  ParseNode *opt_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 1;
+  merge_nodes(opt_node, result, T_EXPR_LIST, $5);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, opt_node, $8);
+}
+| READ_JSON '(' STRING_VALUE ')'
+{
+  ParseNode *kind_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 2;
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, NULL, NULL);
+}
+| READ_JSON '(' STRING_VALUE ')' relation_name
+{
+  ParseNode *kind_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 2;
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, NULL, $5);
+}
+| READ_JSON '(' STRING_VALUE ')' AS relation_name
+{
+  ParseNode *kind_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 2;
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, NULL, $6);
+}
+| READ_JSON '(' STRING_VALUE ',' file_named_opt_list ')'
+{
+  ParseNode *kind_node = NULL;
+  ParseNode *opt_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 2;
+  merge_nodes(opt_node, result, T_EXPR_LIST, $5);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, opt_node, NULL);
+}
+| READ_JSON '(' STRING_VALUE ',' file_named_opt_list ')' relation_name
+{
+  ParseNode *kind_node = NULL;
+  ParseNode *opt_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 2;
+  merge_nodes(opt_node, result, T_EXPR_LIST, $5);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, opt_node, $7);
+}
+| READ_JSON '(' STRING_VALUE ',' file_named_opt_list ')' AS relation_name
+{
+  ParseNode *kind_node = NULL;
+  ParseNode *opt_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 2;
+  merge_nodes(opt_node, result, T_EXPR_LIST, $5);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, opt_node, $8);
+}
+| READ_PARQUET '(' STRING_VALUE ')'
+{
+  ParseNode *kind_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 3;
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, NULL, NULL);
+}
+| READ_PARQUET '(' STRING_VALUE ')' relation_name
+{
+  ParseNode *kind_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 3;
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, NULL, $5);
+}
+| READ_PARQUET '(' STRING_VALUE ')' AS relation_name
+{
+  ParseNode *kind_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 3;
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, NULL, $6);
+}
+| READ_PARQUET '(' STRING_VALUE ',' file_named_opt_list ')'
+{
+  ParseNode *kind_node = NULL;
+  ParseNode *opt_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 3;
+  merge_nodes(opt_node, result, T_EXPR_LIST, $5);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, opt_node, NULL);
+}
+| READ_PARQUET '(' STRING_VALUE ',' file_named_opt_list ')' relation_name
+{
+  ParseNode *kind_node = NULL;
+  ParseNode *opt_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 3;
+  merge_nodes(opt_node, result, T_EXPR_LIST, $5);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, opt_node, $7);
+}
+| READ_PARQUET '(' STRING_VALUE ',' file_named_opt_list ')' AS relation_name
+{
+  ParseNode *kind_node = NULL;
+  ParseNode *opt_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 3;
+  merge_nodes(opt_node, result, T_EXPR_LIST, $5);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, opt_node, $8);
+}
+| GLOB '(' STRING_VALUE ')'
+{
+  ParseNode *kind_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 4;
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, NULL, NULL);
+}
+| GLOB '(' STRING_VALUE ')' relation_name
+{
+  ParseNode *kind_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 4;
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, NULL, $5);
+}
+| GLOB '(' STRING_VALUE ')' AS relation_name
+{
+  ParseNode *kind_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 4;
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, NULL, $6);
+}
+| GLOB '(' STRING_VALUE ',' file_named_opt_list ')'
+{
+  ParseNode *kind_node = NULL;
+  ParseNode *opt_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 4;
+  merge_nodes(opt_node, result, T_EXPR_LIST, $5);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, opt_node, NULL);
+}
+| GLOB '(' STRING_VALUE ',' file_named_opt_list ')' relation_name
+{
+  ParseNode *kind_node = NULL;
+  ParseNode *opt_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 4;
+  merge_nodes(opt_node, result, T_EXPR_LIST, $5);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, opt_node, $7);
+}
+| GLOB '(' STRING_VALUE ',' file_named_opt_list ')' AS relation_name
+{
+  ParseNode *kind_node = NULL;
+  ParseNode *opt_node = NULL;
+  malloc_terminal_node(kind_node, result->malloc_pool_, T_INT);
+  kind_node->value_ = 4;
+  merge_nodes(opt_node, result, T_EXPR_LIST, $5);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_FILE_TABLE_EXPRESSION, 4, kind_node, $3, opt_node, $8);
+}
+;
+
 table_factor:
 tbl_name
 {
@@ -10845,6 +11141,10 @@ tbl_name
   $$ = $1;
 }
 | hybrid_search_expr
+{
+  $$ = $1;
+}
+| file_table_expr
 {
   $$ = $1;
 }
@@ -17604,7 +17904,7 @@ ACCOUNT
 |       CONSTRAINT_SCHEMA
 |       CONTAINS
 |       CONTRIBUTORS
-|       COPY
+|       COPY %prec LOWER_PARENS
 |       COUNT
 |       COSINE
 |       CPU
@@ -17711,10 +18011,12 @@ ACCOUNT
 |       GEOMETRYCOLLECTION
 |       GET_FORMAT
 |       GLOBAL %prec LOWER_PARENS
+|       GLOB %prec LOWER_PARENS
 |       GRANTS
 |       GROUPING
 |       GROUP_CONCAT
 |       HASH
+|       HEADER
 |       HEAP
 |       HELP
 |       HISTOGRAM
@@ -17860,6 +18162,7 @@ ACCOUNT
 |       NORMAL
 |       NOW
 |       NOWAIT
+|       NULLSTR
 |       NO_WAIT
 |       NTILE
 |       NTH_VALUE
@@ -17936,7 +18239,10 @@ ACCOUNT
 |       QUEUE_TIME
 |       QUICK
 |       RANK
+|       READ_CSV %prec LOWER_PARENS
+|       READ_JSON %prec LOWER_PARENS
 |       READ_ONLY
+|       READ_PARQUET %prec LOWER_PARENS
 |       RECOVER
 |       RECOVERY
 |       RECURSIVE

@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX SQL_ENG
 
 #include "sql/engine/basic/ob_function_table_op.h"
+#include "sql/engine/basic/ob_file_table.h"
 #include "sql/engine/ob_exec_context.h"
 #include "sql/engine/expr/ob_expr_lob_utils.h"
 
@@ -27,7 +28,8 @@ using namespace common;
 namespace sql
 {
 
-OB_SERIALIZE_MEMBER((ObFunctionTableSpec, ObOpSpec), value_expr_, column_exprs_, has_correlated_expr_);
+OB_SERIALIZE_MEMBER((ObFunctionTableSpec, ObOpSpec), value_expr_, column_exprs_,
+                    has_correlated_expr_, is_file_table_, file_column_ids_);
 
 int ObFunctionTableOp::inner_open()
 {
@@ -36,6 +38,8 @@ int ObFunctionTableOp::inner_open()
   already_calc_ = false;
   if (OB_ISNULL(MY_SPEC.value_expr_)) {
     ret = OB_ERR_UNEXPECTED;
+  } else if (MY_SPEC.is_file_table_) {
+    next_row_func_ = &ObFunctionTableOp::inner_get_next_row_file;
   } else if (ObExtendType == MY_SPEC.value_expr_->datum_meta_.type_) {
     next_row_func_ = &ObFunctionTableOp::inner_get_next_row_udf;
   } else {
@@ -56,6 +60,9 @@ int ObFunctionTableOp::inner_rescan()
       value_table_ = NULL;
       already_calc_ = false;
     }
+    if (OB_SUCC(ret) && MY_SPEC.is_file_table_ && NULL != file_scan_) {
+      ret = file_scan_->rewind();
+    }
   }
   return ret;
 }
@@ -72,6 +79,10 @@ int ObFunctionTableOp::inner_close()
 
 void ObFunctionTableOp::destroy()
 {
+  if (NULL != file_scan_) {
+    file_scan_->~ObFileTableScan();
+    file_scan_ = NULL;
+  }
   ObOperator::destroy();
 }
 
@@ -191,6 +202,56 @@ int ObFunctionTableOp::inner_get_next_row_udf()
         if (OB_SUCC(ret)) {
           MY_SPEC.column_exprs_.at(i)->set_evaluated_projected(eval_ctx_);
         }
+      }
+    }
+  }
+  return ret;
+}
+
+int ObFunctionTableOp::inner_get_next_row_file()
+{
+  int ret = OB_SUCCESS;
+  ObDatum *value = NULL;
+  clear_evaluated_flag();
+  if (OB_FAIL(ctx_.check_status())) {
+  } else if (OB_ISNULL(MY_SPEC.value_expr_)) {
+    ret = OB_ERR_UNEXPECTED;
+  } else if (!already_calc_) {
+    if (OB_FAIL(MY_SPEC.value_expr_->eval(eval_ctx_, value))) {
+    } else if (OB_ISNULL(value) || value->is_null()) {
+      ret = OB_ERR_UNEXPECTED;
+    } else {
+      void *mem = ctx_.get_allocator().alloc(sizeof(ObFileTableScan));
+      if (OB_ISNULL(mem)) {
+        ret = OB_ALLOCATE_MEMORY_FAILED;
+      } else {
+        file_scan_ = new (mem) ObFileTableScan();
+        if (OB_FAIL(file_scan_->open(ctx_.get_allocator(), value->get_string()))) {
+        } else {
+          already_calc_ = true;
+        }
+      }
+    }
+  }
+  if (OB_FAIL(ret)) {
+  } else if (MY_SPEC.column_exprs_.count() != MY_SPEC.file_column_ids_.count()) {
+    ret = OB_ERR_UNEXPECTED;
+  } else if (OB_ISNULL(file_scan_)) {
+    ret = OB_ERR_UNEXPECTED;
+  } else if (OB_FAIL(file_scan_->next())) {
+  } else {
+    for (int64_t i = 0; OB_SUCC(ret) && i < MY_SPEC.column_exprs_.count(); ++i) {
+      ObObj obj;
+      ObExpr *expr = MY_SPEC.column_exprs_.at(i);
+      if (OB_ISNULL(expr)) {
+        ret = OB_ERR_UNEXPECTED;
+      } else if (OB_FAIL(file_scan_->get_cell(MY_SPEC.file_column_ids_.at(i), obj))) {
+      } else if (obj.is_null()) {
+        expr->locate_datum_for_write(eval_ctx_).set_null();
+      } else if (OB_FAIL(expr->locate_datum_for_write(eval_ctx_).from_obj(obj, expr->obj_datum_map_))) {
+      }
+      if (OB_SUCC(ret)) {
+        expr->set_evaluated_projected(eval_ctx_);
       }
     }
   }

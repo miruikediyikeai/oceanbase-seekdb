@@ -22,6 +22,7 @@
 
 #include "sql/engine/cmd/ob_load_data_parser.h"
 #include "sql/resolver/cmd/ob_load_data_stmt.h"
+#include "sql/engine/basic/ob_file_table.h"
 #include "sql/resolver/ob_resolver_utils.h"
 #include "sql/code_generator/ob_column_index_provider.h"
 #include "query/resolver/ob_partition_type_policy.h"
@@ -121,6 +122,18 @@ int ObResolverUtils::get_all_function_table_column_names(const TableItem &table_
                                                          ObIArray<ObString> &column_names)
 {
   int ret = OB_SUCCESS;
+  if (OB_NOT_NULL(table_item.function_table_expr_) &&
+      table_item.function_table_expr_->is_const_raw_expr()) {
+    const ObObj &val = static_cast<const ObConstRawExpr *>(table_item.function_table_expr_)->get_value();
+    if (val.is_string_type() && ob_is_file_table_payload(val.get_string())) {
+      if (OB_ISNULL(params.allocator_)) {
+        ret = OB_ERR_UNEXPECTED;
+      } else {
+        ret = ob_file_table_column_names(val.get_string(), *params.allocator_, column_names);
+      }
+      return ret;
+    }
+  }
   ObRawExpr *table_expr = NULL;
   ObPLPackageGuard *package_guard = nullptr;
   const ObUserDefinedType *user_type = NULL;
@@ -2655,6 +2668,11 @@ bool ObResolverUtils::is_expr_can_be_used_in_table_function(const ObRawExpr &exp
   } else if (T_FUN_SYS_GENERATOR == expr.get_expr_type()) {
     // for generator(N) stream function
     bret = true;
+  } else if (expr.is_const_raw_expr()) {
+    const ObObj &val = static_cast<const ObConstRawExpr &>(expr).get_value();
+    if (val.is_string_type() && ob_is_file_table_payload(val.get_string())) {
+      bret = true;
+    }
   }
   return bret;
 }

@@ -18,6 +18,8 @@
 
 #include "config_bridge.h"
 #include "ob_static_engine_cg.h"
+#include "sql/engine/basic/ob_file_table.h"
+#include "sql/resolver/expr/ob_raw_expr.h"
 #include "sql/optimizer/ob_log_group_by.h"
 #include "sql/optimizer/ob_log_sort.h"
 #include "sql/optimizer/ob_log_limit.h"
@@ -5503,6 +5505,7 @@ int ObStaticEngineCG::generate_spec(ObLogFunctionTable &op, ObFunctionTableSpec 
   if (OB_ISNULL(op.get_stmt())) {
     ret = OB_ERR_UNEXPECTED;
   } else if (OB_FAIL(spec.column_exprs_.init(op.get_stmt()->get_column_size()))) {
+  } else if (OB_FAIL(spec.file_column_ids_.init(op.get_stmt()->get_column_size()))) {
   } else if (OB_UNLIKELY(op.get_num_of_child() > 1)) {
     ret = OB_ERR_UNEXPECTED;
   } else if (OB_ISNULL(value_raw_expr = op.get_value_expr())) {
@@ -5511,6 +5514,13 @@ int ObStaticEngineCG::generate_spec(ObLogFunctionTable &op, ObFunctionTableSpec 
   } else {
     spec.has_correlated_expr_ = value_raw_expr->has_flag(CNT_DYNAMIC_PARAM);
     spec.value_expr_ = value_expr;
+    spec.is_file_table_ = false;
+    if (value_raw_expr->is_const_raw_expr()) {
+      const ObObj &cobj = static_cast<ObConstRawExpr *>(value_raw_expr)->get_value();
+      if (cobj.is_string_type() && ob_is_file_table_payload(cobj.get_string())) {
+        spec.is_file_table_ = true;
+      }
+    }
     for (int64_t i = 0; OB_SUCC(ret) && i < op.get_output_exprs().count(); ++i) {
       if (OB_FAIL(mark_expr_self_produced(op.get_output_exprs().at(i)))) {
       }
@@ -5526,6 +5536,10 @@ int ObStaticEngineCG::generate_spec(ObLogFunctionTable &op, ObFunctionTableSpec 
         OZ (mark_expr_self_produced(col_item->expr_));
         OZ (generate_rt_expr(*col_item->expr_, rt_expr));
         OZ (spec.column_exprs_.push_back(rt_expr));
+        if (OB_SUCC(ret) && spec.is_file_table_) {
+          OZ (spec.file_column_ids_.push_back(
+              static_cast<int64_t>(col_item->column_id_) - static_cast<int64_t>(OB_APP_MIN_COLUMN_ID)));
+        }
       }
     }
   }

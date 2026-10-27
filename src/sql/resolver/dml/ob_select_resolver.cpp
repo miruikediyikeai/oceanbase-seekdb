@@ -27,6 +27,7 @@
 #include "sql/resolver/cmd/ob_load_data_stmt.h"
 #include "sql/engine/expr/ob_expr_regexp_context.h"
 #include "sql/engine/expr/ob_json_param_type.h"
+#include "lib/string/ob_sql_string.h"
 #include "sql/parser/ob_parser_utils.h"
 
 #include "sql/executor/ob_memory_tracker.h"
@@ -3030,6 +3031,30 @@ int ObSelectResolver::resolve_into_outfile_with_format(const ParseNode *node, Ob
       } else if (T_EXTERNAL_FILE_FORMAT_TYPE == option_node->type_
                  || T_CHARSET == option_node->type_) {
       } else if (OB_FAIL(ObResolverUtils::resolve_file_format(option_node, external_format, params_))) {
+      }
+    }
+    if (OB_SUCC(ret) && external_format.csv_format_.parse_header_) {
+      ObSqlString header;
+      ObSelectStmt *sel = get_select_stmt();
+      if (OB_ISNULL(sel)) {
+        ret = OB_ERR_UNEXPECTED;
+      }
+      for (int64_t i = 0; OB_SUCC(ret) && NULL != sel && i < sel->get_select_item_size(); ++i) {
+        const SelectItem &item = sel->get_select_item(i);
+        ObString name = item.alias_name_;
+        if (name.empty() && NULL != item.expr_ && item.expr_->is_column_ref_expr()) {
+          name = static_cast<const ObColumnRefRawExpr *>(item.expr_)->get_column_name();
+        }
+        if (i > 0 && OB_FAIL(header.append(","))) {
+        } else if (!name.empty() && OB_FAIL(header.append(name))) {
+        }
+      }
+      if (OB_SUCC(ret) && header.length() > 0) {
+        ObString header_copy;
+        if (OB_FAIL(ob_write_string(*allocator_, ObString(header.length(), header.ptr()), header_copy))) {
+        } else {
+          external_format.csv_format_.file_extension_ = header_copy;
+        }
       }
     }
     if (OB_SUCC(ret)

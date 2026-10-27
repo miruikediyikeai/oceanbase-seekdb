@@ -26,6 +26,7 @@
 #include "sql/rewrite/ob_transform_utils.h"
 #include "sql/parser/ob_item_type_str.h"
 #include "sql/printer/ob_select_stmt_printer.h"
+#include "sql/engine/basic/ob_file_table.h"
 #include "sql/engine/expr/ob_expr_autoinc_nextval.h"
 #include "sql/engine/expr/ob_expr_column_conv.h"
 #include "sql/engine/expr/ob_expr_version.h"
@@ -2699,6 +2700,11 @@ int ObDMLResolver::resolve_table(const ParseNode &parse_tree,
           ret = OB_INVALID_ARGUMENT;
         }
         OZ (resolve_function_table_item(*table_node, table_item));
+        break;
+      }
+      case T_FILE_TABLE_EXPRESSION: {
+        if (OB_FAIL(resolve_file_table_item(*table_node, table_item))) {
+        }
         break;
       }
       case T_JSON_TABLE_EXPRESSION: {
@@ -7474,6 +7480,22 @@ int ObDMLResolver::resolve_function_table_column_item(const TableItem &table_ite
   int ret = OB_SUCCESS;
   CK (OB_LIKELY(table_item.is_function_table()));
   CK (OB_NOT_NULL(table_item.function_table_expr_));
+  if (OB_SUCC(ret) && table_item.function_table_expr_->is_const_raw_expr()) {
+    const ObObj &val = static_cast<const ObConstRawExpr *>(table_item.function_table_expr_)->get_value();
+    if (val.is_string_type() && ob_is_file_table_payload(val.get_string())) {
+      ObDMLStmt *file_stmt = get_stmt();
+      if (OB_ISNULL(file_stmt)) {
+        ret = OB_ERR_UNEXPECTED;
+      }
+      for (int64_t i = 0; OB_SUCC(ret) && i < file_stmt->get_column_size(); ++i) {
+        ColumnItem *column_item = file_stmt->get_column_item(i);
+        if (OB_NOT_NULL(column_item) && column_item->table_id_ == table_item.table_id_ &&
+            OB_FAIL(col_items.push_back(*column_item))) {
+        }
+      }
+      return ret;
+    }
+  }
   if (OB_SUCC(ret)) {
     if (table_item.function_table_expr_->get_result_type().is_ext()) {
       ret = resolve_function_table_column_item_udf(table_item, col_items);
@@ -12819,6 +12841,59 @@ int ObDMLResolver::check_need_fill_embedded_vec_expr_param(const ObDMLStmt &stmt
         need_fill = false;
       }
     }
+  }
+  return ret;
+}
+
+int ObDMLResolver::resolve_file_table_item(const ParseNode &parse_tree, TableItem *&tbl_item)
+{
+  int ret = OB_SUCCESS;
+  ObDMLStmt *stmt = get_stmt();
+  TableItem *item = NULL;
+  ObSEArray<ObFileTableCol, 16> cols;
+  ObString payload;
+  ObConstRawExpr *value_expr = NULL;
+  tbl_item = NULL;
+  if (OB_ISNULL(stmt) || OB_ISNULL(allocator_) || OB_ISNULL(params_.expr_factory_) ||
+      OB_ISNULL(session_info_)) {
+    ret = OB_ERR_UNEXPECTED;
+  } else if (OB_FAIL(ob_file_table_resolve_node(*allocator_, session_info_, &parse_tree, cols, payload))) {
+  } else if (OB_FAIL(ObRawExprUtils::build_const_string_expr(*params_.expr_factory_, ObVarcharType,
+                                                            payload, CS_TYPE_UTF8MB4_BIN,
+                                                            value_expr))) {
+  } else if (OB_ISNULL(value_expr)) {
+    ret = OB_ERR_UNEXPECTED;
+  } else if (OB_FAIL(value_expr->deduce_type(session_info_))) {
+  } else if (OB_ISNULL(item = stmt->create_table_item(*allocator_))) {
+    ret = OB_ALLOCATE_MEMORY_FAILED;
+  } else {
+    ObString alias;
+    const ParseNode *alias_node = parse_tree.num_child_ > 3 ? parse_tree.children_[3] : NULL;
+    if (NULL != alias_node && alias_node->str_len_ > 0 && NULL != alias_node->str_value_) {
+      alias.assign_ptr(alias_node->str_value_, static_cast<int32_t>(alias_node->str_len_));
+    } else if (OB_FAIL(stmt->generate_func_table_name(*allocator_, alias))) {
+    }
+    if (OB_SUCC(ret)) {
+      item->table_name_ = alias;
+      item->alias_name_ = alias;
+      item->table_id_ = generate_table_id();
+      item->type_ = TableItem::FUNCTION_TABLE;
+      item->function_table_expr_ = value_expr;
+      if (OB_FAIL(stmt->add_table_item(session_info_, item))) {
+      }
+    }
+  }
+  for (int64_t i = 0; OB_SUCC(ret) && i < cols.count(); ++i) {
+    ColumnItem *col_item = NULL;
+    ObObjMeta meta;
+    ObAccuracy accuracy;
+    if (OB_FAIL(ob_file_table_fill_meta(cols.at(i).type_, meta, accuracy))) {
+    } else if (OB_FAIL(resolve_function_table_column_item(*item, meta, accuracy, cols.at(i).name_,
+                                                         OB_APP_MIN_COLUMN_ID + i, col_item))) {
+    }
+  }
+  if (OB_SUCC(ret)) {
+    tbl_item = item;
   }
   return ret;
 }

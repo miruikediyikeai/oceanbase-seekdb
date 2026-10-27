@@ -16,6 +16,10 @@
 
 #define USING_LOG_PREFIX SQL_RESV
 #include "sql/resolver/ob_resolver.h"
+#include "sql/parser/ob_parser.h"
+#include "sql/resolver/dml/ob_select_resolver.h"
+#include "sql/engine/basic/ob_file_table.h"
+#include "lib/container/ob_se_array.h"
 #include "lib/utility/ob_smart_call.h"
 #include "lib/stat/ob_diagnostic_info_guard.h"
 #include "sql/resolver/cmd/ob_alter_system_resolver.h"
@@ -109,6 +113,48 @@ ObResolver::ObResolver(ObResolverParams &params)
 
 ObResolver::~ObResolver()
 {
+}
+
+static const ParseNode *find_file_table_node(const ParseNode *node)
+{
+  const ParseNode *found = NULL;
+  if (NULL == node) {
+  } else if (T_FILE_TABLE_EXPRESSION == node->type_) {
+    found = node;
+  } else if (node->num_child_ > 0 && NULL != node->children_) {
+    for (int64_t i = 0; NULL == found && i < node->num_child_; ++i) {
+      found = find_file_table_node(node->children_[i]);
+    }
+  }
+  return found;
+}
+
+static bool sql_has_word_prefix(const ObString &sql, const char *word, int64_t word_len)
+{
+  const char *p = sql.ptr();
+  int64_t n = sql.length();
+  int64_t i = 0;
+  bool ok = false;
+  if (NULL != p && NULL != word && word_len > 0) {
+    while (i < n && (' ' == p[i] || '\t' == p[i] || '\n' == p[i] || '\r' == p[i])) {
+      ++i;
+    }
+    if (i + word_len <= n) {
+      ObString head(word_len, p + i);
+      ObString expect(word_len, word);
+      if (0 == head.case_compare(expect)) {
+        ok = true;
+        if (i + word_len < n) {
+          char c = p[i + word_len];
+          if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+              (c >= '0' && c <= '9') || '_' == c) {
+            ok = false;
+          }
+        }
+      }
+    }
+  }
+  return ok;
 }
 
 template <typename ResolverType>
@@ -473,7 +519,46 @@ int ObResolver::resolve(IsPrepared if_prepared, const ParseNode &parse_tree, ObS
         break;
       }
       case T_EXPLAIN: {
-        REGISTER_STMT_RESOLVER(Explain);
+        bool rewritten = false;
+        if (sql_has_word_prefix(params_.cur_sql_, "describe", 8) ||
+            sql_has_word_prefix(params_.cur_sql_, "desc", 4)) {
+          const ParseNode *file_node = NULL;
+          if (real_parse_tree->num_child_ >= 5) {
+            file_node = find_file_table_node(real_parse_tree->children_[4]);
+          }
+          if (NULL != file_node) {
+            ObSEArray<ObFileTableCol, 16> cols;
+            ObString payload;
+            ObString desc_sql;
+            ParseResult parse_result;
+            if (OB_FAIL(ob_file_table_resolve_node(*params_.allocator_, params_.session_info_,
+                                                   file_node, cols, payload))) {
+            } else if (OB_FAIL(ob_file_table_build_describe_sql(*params_.allocator_, cols, desc_sql))) {
+            } else if (OB_FAIL(ObParser(*params_.allocator_,
+                                        params_.session_info_->get_sql_mode()).parse(
+                           desc_sql, parse_result))) {
+            } else if (OB_ISNULL(parse_result.result_tree_) ||
+                       T_STMT_LIST != parse_result.result_tree_->type_ ||
+                       parse_result.result_tree_->num_child_ < 1 ||
+                       OB_ISNULL(parse_result.result_tree_->children_[0]) ||
+                       T_SELECT != parse_result.result_tree_->children_[0]->type_) {
+              ret = OB_ERR_UNEXPECTED;
+            } else {
+              params_.resolver_scope_stmt_type_ = T_SELECT;
+              params_.session_info_->set_stmt_type(stmt::T_SELECT);
+              ObExecContext *desc_ctx = params_.session_info_->get_cur_exec_ctx();
+              if (NULL != desc_ctx && NULL != desc_ctx->get_sql_ctx()) {
+                desc_ctx->get_sql_ctx()->stmt_type_ = stmt::T_SELECT;
+              }
+              ret = stmt_resolver_func<ObSelectResolver>(
+                  params_, *parse_result.result_tree_->children_[0], stmt);
+              rewritten = true;
+            }
+          }
+        }
+        if (OB_SUCC(ret) && !rewritten) {
+          REGISTER_STMT_RESOLVER(Explain);
+        }
         break;
       }
       case T_ALTER_SYSTEM_SET: {
