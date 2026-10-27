@@ -18,16 +18,20 @@
 
 #include "sql/engine/dml/ob_ai_column_runtime.h"
 #include "sql/engine/dml/ob_dml_ctx_define.h"
+#include "lib/allocator/page_arena.h"
 #include "lib/charset/ob_charset.h"
 #include "lib/oblog/ob_log_module.h"
 #include "lib/time/ob_time_utility.h"
 #include "lib/utility/utility.h"
 #include "lib/worker.h"
 #include "lib/string/ob_sql_string.h"
+#include "common/mysqlclient/ob_mysql_proxy.h"
+#include "common/mysqlclient/ob_mysql_result.h"
 #include "share/schema/ob_schema_getter_guard.h"
 #include "share/schema/ob_schema_struct.h"
 #include "share/schema/ob_schema_service.h"
 #include "share/schema/ob_table_schema.h"
+#include "share/ob_errno.h"
 #include "share/ob_server_struct.h"
 #include "share/rc/ob_server_runtime.h"
 #include "sql/engine/ob_exec_context.h"
@@ -631,7 +635,7 @@ int build_predicate(const share::schema::ObTableSchema *schema, const ObDMLBaseC
 {
   int ret = OB_SUCCESS;
   int64_t used = 0;
-  const share::schema::ObRowkeyInfo &rk = schema->get_rowkey_info();
+  const common::ObRowkeyInfo &rk = schema->get_rowkey_info();
   buf[0] = '\0';
   for (int64_t i = 0; OB_SUCC(ret) && i < rk.get_size(); ++i) {
     uint64_t col_id = OB_INVALID_ID;
@@ -808,7 +812,7 @@ int eval_user_expr(const AiTask &task, char *content, int64_t cap, int64_t &cont
   } else if (OB_FAIL(result.get_result()->next())) {
   } else {
     ObString value;
-    if (OB_FAIL(result.get_result()->get_varchar(0, value))) {
+    if (OB_FAIL(result.get_result()->get_varchar(static_cast<int64_t>(0), value))) {
     } else {
       content_len = value.length();
       if (content_len >= cap) {
@@ -1145,7 +1149,7 @@ int ai_col_check_strict(ObExecContext &ctx, uint64_t table_id, const ObIArray<ui
   const share::schema::ObDatabaseSchema *db = NULL;
   bool strict = false;
   if (in_check || OB_ISNULL(session) || OB_INVALID_ID == table_id) {
-  } else if (OB_FAIL(session->get_bool_sys_var(share::SYS_VAR_AI_COLUMN_STRICT_READ, strict)) || !strict) {
+  } else if (OB_FAIL(session->get_sys_variable(share::SYS_VAR_AI_COLUMN_STRICT_READ, strict)) || !strict) {
   } else if (OB_ISNULL(sql_ctx) || OB_ISNULL(sql_ctx->schema_guard_) || OB_ISNULL(GCTX.sql_proxy_)) {
   } else if (OB_FAIL(sql_ctx->schema_guard_->get_table_schema(table_id, schema))) {
     ret = OB_SUCCESS;

@@ -1437,7 +1437,7 @@ int ObTableScanOp::inner_open()
   if (OB_ISNULL(my_session = GET_MY_SESSION(ctx_))) {
     ret = OB_ERR_UNEXPECTED;
   } else if (OB_FAIL(ObAIColumnRuntime::check_strict(ctx_, MY_SPEC.get_ref_table_id(),
-                                                     MY_SPEC.get_full_acccess_cids()))) {
+                                                     MY_CTDEF.get_full_acccess_cids()))) {
   } else if (OB_FAIL(ObDASUtils::check_nested_sql_mutating(MY_SPEC.ref_table_id_, ctx_, true))) {
   } else if (OB_FAIL(init_table_scan_rtdef())) {
   } else if (MY_SPEC.is_fts_ddl_ && OB_FAIL(fts_index_.init(MY_SPEC.is_fts_index_aux_, MY_SPEC.parser_name_,

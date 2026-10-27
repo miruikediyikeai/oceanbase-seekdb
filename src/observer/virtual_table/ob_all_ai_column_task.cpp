@@ -18,6 +18,7 @@
 
 #include "observer/virtual_table/ob_all_ai_column_task.h"
 #include "lib/charset/ob_charset.h"
+#include "sql/session/ob_sql_session_info.h"
 
 using namespace oceanbase::common;
 using namespace oceanbase::sql;
