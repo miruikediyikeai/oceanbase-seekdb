@@ -130,6 +130,9 @@ private:
   // data members
   uint64_t cur_column_id_;
   common::ObSEArray<uint64_t, 16> primary_keys_;
+  // Names of AI columns whose hidden helper columns are added after the last
+  // visible column, so their ids cannot collide with later columns.
+  common::ObSEArray<common::ObString, 4> ai_hidden_columns_;
   common::hash::ObPlacementHashSet<share::schema::ObColumnNameHashWrapper, common::OB_MAX_COLUMN_NUMBER> column_name_set_;
   bool if_not_exist_;
   obcall::ObCreateIndexArg index_arg_;
