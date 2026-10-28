@@ -1507,7 +1507,11 @@ static int parse_page_header(Tr &tr, int &page_type, int64_t &uncomp, int64_t &c
     } else if (stop) {
       break;
     } else if (1 == fid && 5 == ftype) {
-      ret = tr.zz(page_type);
+      int64_t v = 0;
+      ret = tr.zz(v);
+      if (OB_SUCC(ret)) {
+        page_type = static_cast<int>(v);
+      }
     } else if (2 == fid && 5 == ftype) {
       ret = tr.zz(uncomp);
     } else if (3 == fid && 5 == ftype) {
@@ -1527,7 +1531,11 @@ static int parse_page_header(Tr &tr, int &page_type, int64_t &uncomp, int64_t &c
         } else if (2 == id && 5 == ft) {
           ret = tr.zz(num_nulls);
         } else if (4 == id && 5 == ft) {
-          ret = tr.zz(encoding);
+          int64_t v = 0;
+          ret = tr.zz(v);
+          if (OB_SUCC(ret)) {
+            encoding = static_cast<int>(v);
+          }
         } else if (5 == id && 5 == ft) {
           ret = tr.zz(def_len);
         } else if (6 == id && 5 == ft) {
@@ -1918,7 +1926,7 @@ int ob_file_table_resolve_node(ObIAllocator &alloc, ObSQLSessionInfo *session, c
                0 != format.case_compare("newline_delimited")) {
       ret = OB_NOT_SUPPORTED;
       LOG_USER_ERROR(OB_NOT_SUPPORTED, "json format");
-    } else if (OB_FAIL(session->get_bool_sys_var(share::SYS_VAR_ENABLE_FILE_SQL, enabled))) {
+    } else if (OB_FAIL(session->get_sys_variable(share::SYS_VAR_ENABLE_FILE_SQL, enabled))) {
     } else if (!enabled) {
       ret = OB_NOT_SUPPORTED;
       LOG_USER_ERROR(OB_NOT_SUPPORTED, "file sql");

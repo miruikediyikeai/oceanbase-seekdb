@@ -235,7 +235,7 @@ void ObBasicEnglishFTParserDesc::free_token_iter(
 {
   if (OB_NOT_NULL(iter) && OB_NOT_NULL(beng_parser_tls()) && iter == beng_parser_tls()->parser
       && beng_parser_tls()->in_use) {
-    iter->reset();
+    static_cast<ObBEngFTParser *>(iter)->reset();
     beng_parser_tls()->in_use = false;
     iter = nullptr;
   } else if (OB_NOT_NULL(iter)) {
