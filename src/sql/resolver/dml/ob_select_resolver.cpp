@@ -3022,7 +3022,15 @@ int ObSelectResolver::resolve_into_outfile_with_format(const ParseNode *node, Ob
       ObCollationType file_cs_type = has_cs_type
                                      ? ObCharset::get_default_collation(external_format.csv_format_.cs_type_)
                                      : ObCharset::get_system_collation();
-      if (OB_FAIL(external_format.csv_format_.init_format(ObDataInFileStruct(), 0, file_cs_type))) {
+      // COPY writes CSV, so fields are separated by a comma. The default
+      // ObDataInFileStruct carries a tab terminator meant for LOAD DATA.
+      ObDataInFileStruct csv_struct;
+      static const char csv_field_term = ',';
+      csv_struct.field_term_str_.assign_ptr(&csv_field_term, 1);
+      if (OB_FAIL(external_format.csv_format_.init_format(csv_struct, 0, file_cs_type))) {
+      } else {
+        static const char csv_field_term_keep = ',';
+        external_format.csv_format_.field_term_str_.assign_ptr(&csv_field_term_keep, 1);
       }
     }
     for (int i = 0; OB_SUCC(ret) && i < format_node->num_child_; ++i) {
