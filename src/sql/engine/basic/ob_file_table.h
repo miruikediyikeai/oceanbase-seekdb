@@ -23,7 +23,8 @@
 #include "lib/container/ob_iarray.h"
 #include "lib/string/ob_string.h"
 
-struct ParseNode;
+struct _ParseNode;
+typedef struct _ParseNode ParseNode;
 
 namespace oceanbase
 {
