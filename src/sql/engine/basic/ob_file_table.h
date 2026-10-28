@@ -78,8 +78,8 @@ public:
   int get_cell(int64_t idx, common::ObObj &cell);
   int rewind();
   void close();
-private:
   struct Impl;
+private:
   Impl *impl_;
 };
 
