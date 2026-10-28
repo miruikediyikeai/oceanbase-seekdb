@@ -1036,11 +1036,16 @@ int ai_col_touch(ObExecContext &ctx, const ObDMLBaseCtDef &ctdef, ObEvalCtx &eva
   bool have_request = false;
   if (!ctdef.is_primary_index_) {
   } else if (OB_ISNULL(sql_ctx) || OB_ISNULL(sql_ctx->schema_guard_) || OB_ISNULL(session)) {
-    ret = OB_ERR_UNEXPECTED;
+    ret = OB_SUCCESS;
   } else if (OB_FAIL(sql_ctx->schema_guard_->get_table_schema(ctdef.das_base_ctdef_.table_id_, schema))) {
+    // Inner tables are not always visible to the statement's schema guard.
+    // Tracking AI columns is best effort and must never abort the DML.
+    ret = OB_SUCCESS;
   } else if (OB_ISNULL(schema) || !schema->is_user_table()) {
+    ret = OB_SUCCESS;
   } else if (OB_FAIL(sql_ctx->schema_guard_->get_database_schema(schema->get_database_id(), db))
              || OB_ISNULL(db)) {
+    ret = OB_SUCCESS;
   } else if (OB_FAIL(build_predicate(schema, ctdef, eval_ctx, use_new, predicate, sizeof(predicate)))) {
   } else if (is_delete) {
     pthread_mutex_lock(&g_task_mu);
@@ -1149,12 +1154,16 @@ int ai_col_check_strict(ObExecContext &ctx, uint64_t table_id, const ObIArray<ui
   const share::schema::ObDatabaseSchema *db = NULL;
   bool strict = false;
   if (in_check || OB_ISNULL(session) || OB_INVALID_ID == table_id) {
-  } else if (OB_FAIL(session->get_sys_variable(share::SYS_VAR_AI_COLUMN_STRICT_READ, strict)) || !strict) {
+  } else if (OB_FAIL(session->get_sys_variable(share::SYS_VAR_AI_COLUMN_STRICT_READ, strict))) {
+    // Strict read is optional; an unreadable sys var must not break the scan.
+    ret = OB_SUCCESS;
+  } else if (!strict) {
   } else if (OB_ISNULL(sql_ctx) || OB_ISNULL(sql_ctx->schema_guard_) || OB_ISNULL(GCTX.sql_proxy_)) {
   } else if (OB_FAIL(sql_ctx->schema_guard_->get_table_schema(table_id, schema))) {
     ret = OB_SUCCESS;
   } else if (OB_ISNULL(schema) || !schema->is_user_table()) {
   } else if (OB_FAIL(sql_ctx->schema_guard_->get_database_schema(schema->get_database_id(), db)) || OB_ISNULL(db)) {
+    ret = OB_SUCCESS;
   } else {
     in_check = true;
     for (int64_t i = 0; OB_SUCC(ret) && i < column_ids.count(); ++i) {
