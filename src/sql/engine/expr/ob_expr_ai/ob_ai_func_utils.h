@@ -287,6 +287,9 @@ public:
   static int check_info_type_completion(const ObAIFuncExprInfo *info);
   static int check_info_type_dense_embedding(const ObAIFuncExprInfo *info);
   static int check_info_type_rerank(const ObAIFuncExprInfo *info);
+  static int validate_embedding(ObIJsonBase *embedding, int64_t &dimension);
+  static int normalize_rerank_result(ObIAllocator &allocator, ObIJsonBase *result,
+                                     int64_t document_count, ObJsonArray *&sorted_result);
   static bool ob_provider_check(const ObString &provider, const char *str_const) { return provider.case_compare(str_const) == 0; }
   static int get_complete_provider(ObIAllocator &allocator, const ObString &provider, ObAIFuncIComplete *&complete_provider);
   static int get_embed_provider(ObIAllocator &allocator, const ObString &provider, ObAIFuncIEmbed *&embed_provider);

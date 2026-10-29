@@ -55,10 +55,12 @@ int ObExprAIEmbed::calc_result_typeN(ObExprResType &type,
   } else {
     types_stack[MODEL_IDX].set_calc_type(ObVarcharType);
     types_stack[MODEL_IDX].set_calc_collation_type(CS_TYPE_UTF8MB4_BIN);
-    types_stack[CONTENT_IDX].set_calc_type(ObVarcharType);
+    if (!ob_is_text_tc(types_stack[CONTENT_IDX].get_type())) {
+      types_stack[CONTENT_IDX].set_calc_type(ObVarcharType);
+    }
     types_stack[CONTENT_IDX].set_calc_collation_type(CS_TYPE_UTF8MB4_BIN);
     if (param_num == 3) {
-      if (ob_is_integer_type(types_stack[DIM_IDX].get_type())) {
+      if (ob_is_integer_type(types_stack[DIM_IDX].get_type()) || types_stack[DIM_IDX].get_type() == ObNullType) {
         types_stack[DIM_IDX].set_calc_type(ObIntType);
         types_stack[DIM_IDX].set_precision(10);
         types_stack[DIM_IDX].set_scale(0);
@@ -114,7 +116,7 @@ int ObExprAIEmbed::eval_ai_embed(const ObExpr &expr, ObEvalCtx &ctx, ObDatum &re
     ObJsonObject *config = nullptr;
     if (OB_FAIL(ret)) {
     } else if (OB_NOT_NULL(arg_dim)) {
-      dim = arg_dim->get_int();
+      dim = arg_dim->is_null() ? 0 : arg_dim->get_int();
       if (dim <= 0) {
         ret = OB_INVALID_ARGUMENT;
         LOG_USER_ERROR(OB_INVALID_ARGUMENT, "ai_embed, dimension parameter must be a positive integer");
@@ -226,6 +228,8 @@ int ObExprAIEmbed::eval_ai_embed_batch(const ObExpr &expr, ObEvalCtx &ctx,
         for (int64_t j = 0; OB_SUCC(ret) && j < results.count(); ++j) {
           ObString result = results.at(j);
           int64_t row = row_ids.at(j);
+          ObEvalCtx::BatchInfoScopeGuard batch_info_guard(ctx);
+          batch_info_guard.set_batch_idx(row);
           if (OB_FAIL(ObAIFuncUtils::set_string_result(expr, ctx, *res_datum.at(row), result))) {
           } else {
             eval_flags.set(row);
@@ -272,7 +276,11 @@ int ObExprAIEmbed::cg_expr(ObExprCGCtx &expr_cg_ctx,
 
   if (OB_SUCC(ret)) {
     rt_expr.eval_func_ = ObExprAIEmbed::eval_ai_embed;
-    rt_expr.eval_batch_func_ = ObExprAIEmbed::eval_ai_embed_batch;
+    // Varying models or dimensions need a separate request for each row.
+    if (!rt_expr.args_[MODEL_IDX]->is_batch_result() &&
+        (rt_expr.arg_cnt_ < 3 || !rt_expr.args_[DIM_IDX]->is_batch_result())) {
+      rt_expr.eval_batch_func_ = ObExprAIEmbed::eval_ai_embed_batch;
+    }
   }
   return ret;
 }
