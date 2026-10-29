@@ -109,7 +109,8 @@ int ObUpdateResolver::resolve(const ParseNode &parse_tree)
 
   if (OB_SUCC(ret)) {
     // Parse cascading update columns
-    if (OB_FAIL(expand_ai_column_assignments(tables_assign, 4922 == parse_tree.value_))) {
+    LOG_INFO("DDBG7 update resolve", K(parse_tree.value_), K(parse_tree.type_));
+    if (OB_FAIL(expand_ai_column_assignments(tables_assign, is_ai_column_retry()))) {
     } else if (OB_FAIL(resolve_additional_assignments(tables_assign,
                                                T_UPDATE_SCOPE))) {
     }
@@ -541,11 +542,27 @@ int ObUpdateResolver::resolve_update_constraints()
   return ret;
 }
 
+bool ObUpdateResolver::is_ai_column_retry() const
+{
+  static const char *KEYWORD = "retry ai column";
+  const int64_t keyword_len = static_cast<int64_t>(STRLEN(KEYWORD));
+  const ObString &sql = params_.cur_sql_;
+  const char *p = sql.ptr();
+  const int64_t n = sql.length();
+  bool found = false;
+  for (int64_t i = 0; OB_NOT_NULL(p) && !found && i + keyword_len <= n; ++i) {
+    ObString window(keyword_len, p + i);
+    if (0 == window.case_compare(ObString(keyword_len, KEYWORD))) {
+      found = true;
+    }
+  }
+  return found;
+}
+
 int ObUpdateResolver::expand_ai_column_assignments(ObIArray<ObTableAssignment> &tables_assign,
                                                    bool retry_mode)
 {
-  int ret = OB_SUCCESS;
-  ObUpdateStmt *update_stmt = get_update_stmt();
+  int ret = OB_SUCCESS;  ObUpdateStmt *update_stmt = get_update_stmt();
   for (int64_t t = 0; OB_SUCC(ret) && t < tables_assign.count(); ++t) {
     ObTableAssignment &ta = tables_assign.at(t);
     const ObTableSchema *table_schema = NULL;
