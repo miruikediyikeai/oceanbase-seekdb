@@ -28,7 +28,8 @@ class ObTransformSimplifyExpr : public ObTransformRule
 {
 public:
   ObTransformSimplifyExpr(ObTransformerCtx *ctx)
-    : ObTransformRule(ctx, TransMethod::POST_ORDER, T_SIMPLIFY_EXPR)
+    : ObTransformRule(ctx, TransMethod::POST_ORDER, T_SIMPLIFY_EXPR),
+      not_elim_in_predicate_(true)
   {}
 
   virtual ~ObTransformSimplifyExpr() {}
@@ -219,6 +220,9 @@ private:
                                               ObIArray<ObRawExpr*> &extracted_preds);
   int add_constraint_for_convert_case_when_by_then(ObIArray<ObRawExpr *> &false_null_exprs,
                                                    ObIArray<ObRawExpr *> &true_exprs);
+  // True while simplifying a filter/join predicate. Cleared once NOT
+  // elimination walks into a value expression such as IFNULL.
+  bool not_elim_in_predicate_;
 };
 }
 }

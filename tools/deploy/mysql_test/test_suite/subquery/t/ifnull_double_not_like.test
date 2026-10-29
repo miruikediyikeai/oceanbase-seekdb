@@ -1,0 +1,14 @@
+# ifnull + boolean scalar subquery + even NOT chain over LIKE
+# must not raise ERROR 4016 during type deduction
+
+SELECT 1
+FROM dual
+WHERE IFNULL((SELECT FALSE), !(!(1 LIKE "x")));
+
+SELECT 1
+FROM dual
+WHERE IFNULL((SELECT FALSE), !(1 LIKE "x"));
+
+SELECT 1
+FROM dual
+WHERE IFNULL(FALSE, !(!(1 LIKE "x")));

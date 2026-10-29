@@ -2294,6 +2294,7 @@ int ObTransformSimplifyExpr::push_not(ObIArray<ObRawExpr*> &conditions, bool &tr
   hash::ObHashMap<uint64_t, ObRawExpr *> push_expr_map;
   if (!push_expr_map.created() && OB_FAIL(push_expr_map.create(20, ObModIds::OB_SQL_COMPILE))) {
   }
+  not_elim_in_predicate_ = true;
   for (int64_t i = 0; OB_SUCC(ret) && i < conditions.count(); i++) {
     ObRawExpr *&child_expr = conditions.at(i);
     if (OB_ISNULL(child_expr)) {
@@ -2321,6 +2322,16 @@ int ObTransformSimplifyExpr::recursive_push_not(ObRawExpr *&expr,
     //do nothing
   } else if (OB_FAIL(do_push_not(expr, push_expr_map, trans_happened))) {
   }
+  // Filter predicates (AND/OR/NOT/XOR and the top-level condition) keep the
+  // bare bool expr. A value parent such as IFNULL needs the NOT result type.
+  const bool saved_in_predicate = not_elim_in_predicate_;
+  if (OB_SUCC(ret) && saved_in_predicate &&
+      T_OP_AND != expr->get_expr_type() &&
+      T_OP_OR != expr->get_expr_type() &&
+      T_OP_NOT != expr->get_expr_type() &&
+      T_OP_XOR != expr->get_expr_type()) {
+    not_elim_in_predicate_ = false;
+  }
   for (int64_t i = 0; OB_SUCC(ret) && i < expr->get_param_count(); i++) {
     ObRawExpr *&child_expr = expr->get_param_expr(i);
     if (OB_ISNULL(child_expr)) {
@@ -2330,6 +2341,7 @@ int ObTransformSimplifyExpr::recursive_push_not(ObRawExpr *&expr,
     } else if (OB_FAIL(SMART_CALL(recursive_push_not(child_expr, push_expr_map, trans_happened)))) {
     } else {/*do nothing*/}
   }
+  not_elim_in_predicate_ = saved_in_predicate;
   return ret;
 }
 
@@ -2377,11 +2389,24 @@ int ObTransformSimplifyExpr::do_push_not(ObRawExpr *&expr,
     } else {
       // size of not is even
       // not(not c1 > 1)) -> c1>1
+      // NOT's result is int32. LIKE (and some other bool exprs) is bigint.
+      // In a value expression the parent, for example IFNULL, has already
+      // merged types and added an implicit cast. Replacing the NOT with the
+      // wider bool expr changes that merge and the next deduction casts the
+      // existing implicit cast again (-4016). Keep the NOT result type there.
+      // A filter predicate still becomes the bare bool expr.
       ObRawExpr *temp = NULL;
       if (OB_FAIL(ObRawExprUtils::try_create_bool_expr(cur, temp, *expr_factory))) {
       } else if (OB_ISNULL(temp)) {
         ret = OB_ERR_UNEXPECTED;
       } else if (OB_FAIL(temp->formalize(ctx_->session_info_))) {
+      } else if (!not_elim_in_predicate_ &&
+                 expr->get_result_type().get_type() != ObNullType &&
+                 expr->get_result_type().get_type() != ObMaxType &&
+                 OB_FAIL(ObTransformUtils::add_cast_for_replace_if_need(*expr_factory,
+                                                                        expr,
+                                                                        temp,
+                                                                        ctx_->session_info_))) {
       } else {
         expr = temp;
         is_valid = false;
