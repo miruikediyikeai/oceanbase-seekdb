@@ -932,41 +932,42 @@ bool finish_task(AiTask &task, int64_t slot, char *sql_value, int64_t cap)
 
 void write_group(AiTask *batch, int64_t *slots, bool *ok, char values[][2048], int64_t n)
 {
-  ObSqlString sql;
-  bool any = false;
-  int64_t affected = 0;
   if (OB_ISNULL(GCTX.sql_proxy_) || n <= 0) {
     return;
   }
-  sql.append_fmt("UPDATE `%s`.`%s` SET ", batch[0].db_name_, batch[0].table_name_);
+  // Each task targets one row. Combining different rows into a single UPDATE
+  // makes the request id conditions contradictory, so write them one by one.
   for (int64_t i = 0; i < n; ++i) {
+    ObSqlString sql;
+    int64_t affected = 0;
     if (!ok[i]) {
       continue;
     }
-    if (any) {
-      sql.append(", ");
+    if (OB_SUCCESS != sql.append_fmt("UPDATE `%s`.`%s` SET `%s` = %s WHERE %s",
+                                     batch[i].db_name_, batch[i].table_name_,
+                                     batch[i].column_name_, values[i],
+                                     batch[i].predicate_)) {
+      continue;
     }
-    sql.append_fmt("`%s` = %s", batch[i].column_name_, values[i]);
-    any = true;
-  }
-  if (!any) {
-    return;
-  }
-  sql.append_fmt(" WHERE %s", batch[0].predicate_);
-  for (int64_t i = 0; i < n; ++i) {
-    if (ok[i]) {
-      sql.append_fmt(" AND `%s` = %ld", batch[i].request_name_, static_cast<long>(batch[i].request_id_));
+    int ret = GCTX.sql_proxy_->write(sql.ptr(), affected);
+    LOG_INFO("ai column worker write back", K(ret), K(affected), K(sql));
+    if (OB_SUCC(ret) && affected > 0) {
+      pthread_mutex_lock(&g_task_mu);
+      if (slots[i] >= 0 && g_tasks[slots[i]].request_id_ == batch[i].request_id_) {
+        g_tasks[slots[i]].used_ = false;
+        g_tasks[slots[i]].removed_ = true;
+      }
+      pthread_mutex_unlock(&g_task_mu);
+    } else if (OB_SUCC(ret) && affected <= 0) {
+      // The row is gone or already recomputed; drop the task either way.
+      pthread_mutex_lock(&g_task_mu);
+      if (slots[i] >= 0 && g_tasks[slots[i]].request_id_ == batch[i].request_id_) {
+        g_tasks[slots[i]].used_ = false;
+        g_tasks[slots[i]].removed_ = true;
+      }
+      pthread_mutex_unlock(&g_task_mu);
     }
   }
-  GCTX.sql_proxy_->write(sql.ptr(), affected);
-  pthread_mutex_lock(&g_task_mu);
-  for (int64_t i = 0; i < n; ++i) {
-    if (ok[i] && g_tasks[slots[i]].request_id_ == batch[i].request_id_) {
-      g_tasks[slots[i]].used_ = false;
-      g_tasks[slots[i]].removed_ = true;
-    }
-  }
-  pthread_mutex_unlock(&g_task_mu);
 }
 
 void *ai_worker(void *)
@@ -1025,7 +1026,7 @@ void ensure_worker()
   pthread_mutex_unlock(&g_task_mu);
 }
 
-int ai_col_touch(ObExecContext &ctx, const ObDMLBaseCtDef &ctdef, ObEvalCtx &eval_ctx, bool use_new, bool is_delete)
+int ai_col_touch(ObExecContext &ctx, const ObDMLBaseCtDef &ctdef, ObEvalCtx &eval_ctx, bool use_new, bool is_delete, bool is_update)
 {
   int ret = OB_SUCCESS;
   const share::schema::ObTableSchema *schema = NULL;
@@ -1038,7 +1039,8 @@ int ai_col_touch(ObExecContext &ctx, const ObDMLBaseCtDef &ctdef, ObEvalCtx &eva
   if (!ctdef.is_primary_index_) {
   } else if (OB_ISNULL(sql_ctx) || OB_ISNULL(sql_ctx->schema_guard_) || OB_ISNULL(session)) {
     ret = OB_SUCCESS;
-  } else if (OB_FAIL(sql_ctx->schema_guard_->get_table_schema(ctdef.das_base_ctdef_.table_id_, schema))) {
+  } else if (OB_FAIL(sql_ctx->schema_guard_->get_table_schema(
+                 ctdef.das_base_ctdef_.index_tid_, schema))) {
     // Inner tables are not always visible to the statement's schema guard.
     // Tracking AI columns is best effort and must never abort the DML.
     ret = OB_SUCCESS;
@@ -1198,17 +1200,17 @@ int ObAIColumnRuntime::collect_tasks(uint64_t session_id, common::ObIArray<ObAIC
 
 int ObAIColumnRuntime::on_insert(ObExecContext &ctx, const ObDMLBaseCtDef &ctdef, ObEvalCtx &eval_ctx)
 {
-  return ai_col_touch(ctx, ctdef, eval_ctx, true, false);
+  return ai_col_touch(ctx, ctdef, eval_ctx, true, false, false);
 }
 
 int ObAIColumnRuntime::on_update(ObExecContext &ctx, const ObDMLBaseCtDef &ctdef, ObEvalCtx &eval_ctx)
 {
-  return ai_col_touch(ctx, ctdef, eval_ctx, true, false);
+  return ai_col_touch(ctx, ctdef, eval_ctx, true, false, false);
 }
 
 int ObAIColumnRuntime::on_delete(ObExecContext &ctx, const ObDMLBaseCtDef &ctdef, ObEvalCtx &eval_ctx)
 {
-  return ai_col_touch(ctx, ctdef, eval_ctx, false, true);
+  return ai_col_touch(ctx, ctdef, eval_ctx, false, true, false);
 }
 
 void ObAIColumnRuntime::on_end_trans(ObSQLSessionInfo *session, bool commit_ok)
