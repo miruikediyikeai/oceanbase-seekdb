@@ -555,7 +555,7 @@ int ObUpdateResolver::expand_ai_column_assignments(ObIArray<ObTableAssignment> &
       ret = OB_ERR_UNEXPECTED;
     } else if (OB_ISNULL(table_item = update_stmt->get_table_item_by_id(ta.table_id_))) {
       ret = OB_ERR_UNEXPECTED;
-    } else if (OB_FAIL(schema_checker_->get_table_schema(ta.table_id_, table_schema))) {
+    } else if (OB_FAIL(schema_checker_->get_table_schema(table_item->ref_id_, table_schema))) {
       // AI column bookkeeping is optional. A table that the checker cannot
       // resolve (inner tables, for example) must not fail the UPDATE.
       ret = OB_SUCCESS;

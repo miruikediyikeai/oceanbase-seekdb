@@ -1072,12 +1072,11 @@ int ai_col_touch(ObExecContext &ctx, const ObDMLBaseCtDef &ctdef, ObEvalCtx &eva
         request_id = __sync_fetch_and_add(&g_request_seq, 1);
         have_request = true;
       }
-      if (OB_FAIL(ObAIColumnRuntime::hidden_name(request_name, sizeof(request_name), "rq",
-                                                 column->get_column_name()))) {
-      } else if (OB_NOT_NULL(request_col = schema->get_column_schema(request_name))
-                 && OB_NOT_NULL(request_expr = find_expr(ctdef, request_col->get_column_id(), true))) {
-        request_expr->locate_expr_datum(eval_ctx).set_int(request_id);
-      }
+      // The request id stays in memory only. Writing it into the row would make
+      // the hidden column differ between the SQL old row and storage, which
+      // fails the DML old row check. The row key predicate identifies the row.
+      UNUSED(request_expr);
+      UNUSED(request_col);
       if (OB_SUCC(ret)) {
         AiTask task;
         pthread_mutex_lock(&g_task_mu);
@@ -1205,7 +1204,7 @@ int ObAIColumnRuntime::on_insert(ObExecContext &ctx, const ObDMLBaseCtDef &ctdef
 
 int ObAIColumnRuntime::on_update(ObExecContext &ctx, const ObDMLBaseCtDef &ctdef, ObEvalCtx &eval_ctx)
 {
-  return ai_col_touch(ctx, ctdef, eval_ctx, true, false, false);
+  return ai_col_touch(ctx, ctdef, eval_ctx, true, false, true);
 }
 
 int ObAIColumnRuntime::on_delete(ObExecContext &ctx, const ObDMLBaseCtDef &ctdef, ObEvalCtx &eval_ctx)

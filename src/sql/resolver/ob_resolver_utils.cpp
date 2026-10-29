@@ -5315,9 +5315,16 @@ int ObResolverUtils::wait_for_sys_package_ready(ObSQLSessionInfo &session_info)
   if (config::_enable_async_load_sys_package() && !GCTX.sys_package_ready_
       && session_info.is_user_session() && share::server_is_write_enabled()) {
     const int64_t retry_interval_us = 100L * 1000L; // 100ms
+    // Bound the wait so a broken package load surfaces as a real error instead
+    // of blocking the statement until its query timeout expires.
+    const int64_t max_wait_us = 5L * 1000L * 1000L; // 5s
+    const int64_t begin_us = ObTimeUtility::current_time();
     bool waited = false;
     while (!GCTX.sys_package_ready_ && OB_SUCC(ret)) {
-      if (NULL != session_info.get_cur_exec_ctx() && OB_FAIL(session_info.get_cur_exec_ctx()->check_status())) {
+      if (ObTimeUtility::current_time() - begin_us > max_wait_us) {
+        LOG_WARN("sys package still not ready after bounded wait", K(max_wait_us));
+        break;
+      } else if (NULL != session_info.get_cur_exec_ctx() && OB_FAIL(session_info.get_cur_exec_ctx()->check_status())) {
       } else {
         if (!waited) {
           LOG_INFO("sys package not ready yet, waiting for loading completion");
