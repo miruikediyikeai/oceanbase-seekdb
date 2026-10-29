@@ -109,7 +109,6 @@ int ObUpdateResolver::resolve(const ParseNode &parse_tree)
 
   if (OB_SUCC(ret)) {
     // Parse cascading update columns
-    LOG_INFO("DDBG7 update resolve", K(parse_tree.value_), K(parse_tree.type_));
     if (OB_FAIL(expand_ai_column_assignments(tables_assign, is_ai_column_retry()))) {
     } else if (OB_FAIL(resolve_additional_assignments(tables_assign,
                                                T_UPDATE_SCOPE))) {
@@ -544,16 +543,27 @@ int ObUpdateResolver::resolve_update_constraints()
 
 bool ObUpdateResolver::is_ai_column_retry() const
 {
-  static const char *KEYWORD = "retry ai column";
-  const int64_t keyword_len = static_cast<int64_t>(STRLEN(KEYWORD));
-  const ObString &sql = params_.cur_sql_;
-  const char *p = sql.ptr();
-  const int64_t n = sql.length();
+  const char *p = params_.cur_sql_.ptr();
+  const int64_t n = params_.cur_sql_.length();
   bool found = false;
-  for (int64_t i = 0; OB_NOT_NULL(p) && !found && i + keyword_len <= n; ++i) {
-    ObString window(keyword_len, p + i);
-    if (0 == window.case_compare(ObString(keyword_len, KEYWORD))) {
-      found = true;
+  if (OB_NOT_NULL(p) && n > 0) {
+    const char *word = "retry ai column";
+    const int64_t word_len = 16;
+    for (int64_t i = 0; !found && i + word_len <= n; ++i) {
+      bool match = true;
+      for (int64_t k = 0; match && k < word_len; ++k) {
+        char a = p[i + k];
+        char b = word[k];
+        if (a >= 'A' && a <= 'Z') {
+          a = static_cast<char>(a - 'A' + 'a');
+        }
+        if (a != b) {
+          match = false;
+        }
+      }
+      if (match) {
+        found = true;
+      }
     }
   }
   return found;
