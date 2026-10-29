@@ -47,9 +47,9 @@ public:
 private:
   int resolve_table_list(const ParseNode &parse_tree);
   int expand_ai_column_assignments(common::ObIArray<ObTableAssignment> &tables_assign, bool retry_mode);
-  // ALTER TABLE ... RETRY AI COLUMN is parsed into an UPDATE, so the statement
-  // text is the reliable way to recognize it.
-  bool is_ai_column_retry() const;
+  // ALTER TABLE ... RETRY AI COLUMN is parsed into an UPDATE that carries a
+  // sentinel in the last child, because value_ is lost during rewriting.
+  bool is_ai_column_retry(const ParseNode &parse_tree) const;
   int generate_update_table_info(ObTableAssignment &table_assign);
   int check_multi_update_table_conflict();
   int check_join_update_conflict();

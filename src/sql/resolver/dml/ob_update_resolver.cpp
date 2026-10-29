@@ -109,7 +109,7 @@ int ObUpdateResolver::resolve(const ParseNode &parse_tree)
 
   if (OB_SUCC(ret)) {
     // Parse cascading update columns
-    if (OB_FAIL(expand_ai_column_assignments(tables_assign, is_ai_column_retry()))) {
+    if (OB_FAIL(expand_ai_column_assignments(tables_assign, is_ai_column_retry(parse_tree)))) {
     } else if (OB_FAIL(resolve_additional_assignments(tables_assign,
                                                T_UPDATE_SCOPE))) {
     }
@@ -541,30 +541,12 @@ int ObUpdateResolver::resolve_update_constraints()
   return ret;
 }
 
-bool ObUpdateResolver::is_ai_column_retry() const
+bool ObUpdateResolver::is_ai_column_retry(const ParseNode &parse_tree) const
 {
-  const char *p = params_.cur_sql_.ptr();
-  const int64_t n = params_.cur_sql_.length();
   bool found = false;
-  if (OB_NOT_NULL(p) && n > 0) {
-    const char *word = "retry ai column";
-    const int64_t word_len = 16;
-    for (int64_t i = 0; !found && i + word_len <= n; ++i) {
-      bool match = true;
-      for (int64_t k = 0; match && k < word_len; ++k) {
-        char a = p[i + k];
-        char b = word[k];
-        if (a >= 'A' && a <= 'Z') {
-          a = static_cast<char>(a - 'A' + 'a');
-        }
-        if (a != b) {
-          match = false;
-        }
-      }
-      if (match) {
-        found = true;
-      }
-    }
+  if (T_UPDATE == parse_tree.type_ && parse_tree.num_child_ >= 11
+      && OB_NOT_NULL(parse_tree.children_) && OB_NOT_NULL(parse_tree.children_[10])) {
+    found = (1 == parse_tree.children_[10]->value_);
   }
   return found;
 }
@@ -572,7 +554,8 @@ bool ObUpdateResolver::is_ai_column_retry() const
 int ObUpdateResolver::expand_ai_column_assignments(ObIArray<ObTableAssignment> &tables_assign,
                                                    bool retry_mode)
 {
-  int ret = OB_SUCCESS;  ObUpdateStmt *update_stmt = get_update_stmt();
+  int ret = OB_SUCCESS;
+  ObUpdateStmt *update_stmt = get_update_stmt();
   for (int64_t t = 0; OB_SUCC(ret) && t < tables_assign.count(); ++t) {
     ObTableAssignment &ta = tables_assign.at(t);
     const ObTableSchema *table_schema = NULL;

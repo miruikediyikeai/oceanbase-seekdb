@@ -15097,9 +15097,15 @@ alter_with_opt_hint TABLE relation_factor alter_table_actions
     malloc_non_terminal_node(asgn, result->malloc_pool_, T_ASSIGN_ITEM, 2, colref, null_node);
     malloc_non_terminal_node(asgn_list, result->malloc_pool_, T_LINK_NODE, 1, asgn);
     merge_nodes(asgn_list, result, T_ASSIGN_LIST, asgn_list);
+    // children_[10] is otherwise unused; a sentinel here tells the resolver that
+    // this UPDATE came from ALTER TABLE ... RETRY AI COLUMN. The node value_ is
+    // not preserved across statement rewriting, so it cannot carry the mark.
+    ParseNode *retry_mark = NULL;
+    malloc_terminal_node(retry_mark, result->malloc_pool_, T_INT);
+    retry_mark->value_ = 1;
     malloc_non_terminal_node($$, result->malloc_pool_, T_UPDATE, 11,
                              NULL, tables, asgn_list, where_node,
-                             NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+                             NULL, NULL, NULL, NULL, NULL, NULL, retry_mark);
     $$->value_ = 4922;
   } else {
     malloc_non_terminal_node($$, result->malloc_pool_, T_ALTER_TABLE, 4, $3, table_actions, NULL, $1);
