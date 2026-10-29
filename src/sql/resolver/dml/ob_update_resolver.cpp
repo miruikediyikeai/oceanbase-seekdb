@@ -576,6 +576,8 @@ int ObUpdateResolver::expand_ai_column_assignments(ObIArray<ObTableAssignment> &
       if (retry_mode && (OB_ISNULL(col) || !ObAIColumnRuntime::is_ai_comment(col->get_comment()))) {
         ret = OB_NOT_SUPPORTED;
         LOG_USER_ERROR(OB_NOT_SUPPORTED, "retrying a column that is not an AI column");
+        SQL_RESV_LOG(WARN, "retry ai column targets a non AI column", K(ret));
+        return ret;
       }
     }
     if (OB_SUCC(ret) && OB_NOT_NULL(table_schema)) {
