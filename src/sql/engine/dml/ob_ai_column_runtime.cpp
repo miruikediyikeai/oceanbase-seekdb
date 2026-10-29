@@ -756,6 +756,20 @@ void sql_literal(char kind, const char *printed, int64_t printed_len, char *out,
     len = s;
   }
   if ('e' == kind) {
+    // Embedding output is an array of vectors. A single row needs the inner
+    // vector, otherwise the stored literal becomes [[..]] and fails vector parse.
+    if (len >= 4 && text[0] == '[' && text[1] == '[' && text[len - 1] == ']' && text[len - 2] == ']') {
+      bool nested_only = true;
+      for (int64_t i = 2; i < len - 2 && nested_only; ++i) {
+        if (']' == text[i] && i + 1 < len - 2 && '[' == text[i + 1]) {
+          nested_only = false;
+        }
+      }
+      if (nested_only) {
+        ++text;
+        len -= 2;
+      }
+    }
     for (int64_t i = 0; i < len && w + 1 < cap; ++i) {
       if (' ' == text[i]) {
         continue;
@@ -966,6 +980,19 @@ void write_group(AiTask *batch, int64_t *slots, bool *ok, char values[][2048], i
         g_tasks[slots[i]].removed_ = true;
       }
       pthread_mutex_unlock(&g_task_mu);
+    } else {
+      // A failed write must not spin forever; give up after one retry.
+      bool drop = false;
+      pthread_mutex_lock(&g_task_mu);
+      if (slots[i] >= 0 && g_tasks[slots[i]].request_id_ == batch[i].request_id_) {
+        if (++g_tasks[slots[i]].retry_count_ > 1) {
+          g_tasks[slots[i]].used_ = false;
+          g_tasks[slots[i]].removed_ = true;
+          drop = true;
+        }
+      }
+      pthread_mutex_unlock(&g_task_mu);
+      LOG_WARN("ai column write back failed", K(ret), K(drop), K(sql));
     }
   }
 }
