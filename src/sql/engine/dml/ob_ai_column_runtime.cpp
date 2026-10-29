@@ -271,7 +271,8 @@ int read_options(const ParseNode *opts, int64_t &max_retries)
   int ret = OB_SUCCESS;
   max_retries = 0;
   if (OB_ISNULL(opts)) {
-    ret = OB_ERR_PARSER_SYNTAX;
+    // WITH (...) is optional: without it, defaults apply.
+    return OB_SUCCESS;
   } else if (T_ASSIGN_ITEM == opts->type_) {
     ret = OB_ERR_UNEXPECTED;
   } else if (T_EXPR_LIST != opts->type_) {

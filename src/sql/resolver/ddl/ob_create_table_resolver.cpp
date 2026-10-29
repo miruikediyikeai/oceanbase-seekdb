@@ -942,20 +942,25 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
       if (OB_SUCC(ret)) {
         for (int64_t i = 0; OB_SUCC(ret) && i < ai_hidden_columns_.count(); ++i) {
           const ObString &ai_name = ai_hidden_columns_.at(i);
+          char ai_name_buf[OB_MAX_COLUMN_NAME_LENGTH + 1];
+          MEMSET(ai_name_buf, 0, sizeof(ai_name_buf));
           const uint64_t state_id = gen_column_id();
           const uint64_t request_id = gen_column_id();
           const uint64_t spec_id = gen_column_id();
           char state_name[128];
           char request_name[128];
           char spec_name[128];
-          if (OB_FAIL(ObAIColumnRuntime::add_create_hidden(table_schema, ai_name.ptr(),
-                                                          state_id, request_id, spec_id))) {
+          if (ai_name.empty() || ai_name.length() > OB_MAX_COLUMN_NAME_LENGTH) {
+            ret = OB_ERR_UNEXPECTED;
+          } else if (FALSE_IT(MEMCPY(ai_name_buf, ai_name.ptr(), ai_name.length()))) {
+          } else if (OB_FAIL(ObAIColumnRuntime::add_create_hidden(table_schema, ai_name_buf,
+                                                                  state_id, request_id, spec_id))) {
           } else if (OB_FAIL(ObAIColumnRuntime::hidden_name(state_name, sizeof(state_name), "st",
-                                                            ai_name.ptr()))) {
+                                                            ai_name_buf))) {
           } else if (OB_FAIL(ObAIColumnRuntime::hidden_name(request_name, sizeof(request_name), "rq",
-                                                            ai_name.ptr()))) {
+                                                            ai_name_buf))) {
           } else if (OB_FAIL(ObAIColumnRuntime::hidden_name(spec_name, sizeof(spec_name), "sp",
-                                                            ai_name.ptr()))) {
+                                                            ai_name_buf))) {
           } else if (OB_FAIL(column_name_set_.set_refactored(ObColumnNameHashWrapper(ObString(state_name))))) {
           } else if (OB_FAIL(column_name_set_.set_refactored(ObColumnNameHashWrapper(ObString(request_name))))) {
           } else if (OB_FAIL(column_name_set_.set_refactored(ObColumnNameHashWrapper(ObString(spec_name))))) {

@@ -572,7 +572,7 @@ END_P SET_VAR DELIMITER
 %type <node> skip_index_type opt_skip_index_type_list
 %type <node> vec_index_params vec_index_param vec_index_param_value opt_with_vector_index_parameters
 %type <node> json_table_expr unnest_expr mock_jt_on_error_on_empty jt_column_list json_table_column_def
-%type <node> file_table_expr file_named_opt_list file_named_opt file_opt_value copy_opt_list copy_opt
+%type <node> file_table_expr file_named_opt_list file_named_opt file_opt_value copy_opt_list copy_opt opt_ai_col_with
 %type <node> json_table_ordinality_column_def json_table_exists_column_def json_table_value_column_def json_table_nested_column_def
 %type <node> opt_value_on_empty_or_error_or_mismatch opt_on_mismatch
 %type <node> table_values_clause table_values_clause_with_order_by_and_limit values_row_list row_value
@@ -6254,13 +6254,24 @@ NAME_OB COMP_EQ STRING_VALUE
 }
 ;
 
-column_attribute:
-AI COLUMN '(' expr ')' WITH '(' ai_col_opt_list ')'
+opt_ai_col_with:
+WITH '(' ai_col_opt_list ')'
 {
   ParseNode *opts = NULL;
+  merge_nodes(opts, result, T_EXPR_LIST, $3);
+  $$ = opts;
+}
+| /*empty*/
+{
+  $$ = NULL;
+}
+;
+
+column_attribute:
+AI COLUMN '(' expr ')' opt_ai_col_with
+{
   dup_expr_string($4, result, @4.first_column, @4.last_column);
-  merge_nodes(opts, result, T_EXPR_LIST, $8);
-  malloc_non_terminal_node($$, result->malloc_pool_, T_AI_COLUMN_CLAUSE, 2, $4, opts);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_AI_COLUMN_CLAUSE, 2, $4, $6);
 }
 | not NULLX
 {
