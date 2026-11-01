@@ -426,6 +426,12 @@ public:
 
   class Compare
   {
+    struct SortKey
+    {
+      uint32_t field_idx_;
+      ObDatumCmpFuncType cmp_func_;
+      bool is_ascending_;
+    };
   public:
     Compare();
     int init(const ObIArray<ObSortFieldCollation> *sort_collations,
@@ -481,6 +487,8 @@ public:
     int64_t cmp_start_;
     int64_t cmp_end_;
   private:
+    // Keep the key index, comparator and direction together in the hot loop.
+    common::ObSEArray<SortKey, 4> sort_keys_;
     int64_t cnt_;
     DISALLOW_COPY_AND_ASSIGN(Compare);
   };

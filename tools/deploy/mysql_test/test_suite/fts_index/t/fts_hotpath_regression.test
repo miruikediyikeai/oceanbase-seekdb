@@ -1,0 +1,62 @@
+# Regression coverage for character classification, word aggregation, sort
+# comparator metadata caching and binary document ID merging.
+--disable_warnings
+DROP DATABASE IF EXISTS fts_hotpath_regression;
+--enable_warnings
+CREATE DATABASE fts_hotpath_regression;
+USE fts_hotpath_regression;
+SET NAMES utf8mb4;
+SET ob_query_timeout = 1000000000;
+
+SELECT TOKENIZE('中国人民银行 南京市长江大桥 三百二十公里 ＡＢＣ１２３ かな 한국어 😀', 'ik', '[{"output":"all"}]') AS tokens;
+SELECT TOKENIZE('研究生命起源 中华人民共和国', 'ik', '[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]') AS tokens;
+SELECT TOKENIZE('ALPHA alpha Alpha beta-beta the THE 123 123', 'beng', '[{"output":"all"}]') AS tokens;
+SELECT TOKENIZE(CONCAT('Abc', CHAR(0), 'Def', CHAR(9), 'GHI', CHAR(10), 'Jkl'), 'beng', '[{"output":"all"}]') AS tokens;
+SELECT TOKENIZE('I Istanbul İ ı École école', 'beng', '[{"output":"all"}]') AS tokens;
+SELECT TOKENIZE('cafe café cafe École ecole école', 'space', '[{"output":"all"}]') AS tokens;
+SELECT TOKENIZE('café cafe café ecole école ecole', 'space', '[{"output":"all"}]') AS tokens;
+SELECT TOKENIZE(CAST(REPEAT('alpha ', 200) AS CHAR), 'beng', '[{"output":"all"}]') AS tokens;
+SELECT TOKENIZE(CAST(REPEAT('中国人民银行 ', 80) AS CHAR), 'ik', '[{"output":"all"}]') AS tokens;
+SELECT TOKENIZE('', 'ik') AS tokens, TOKENIZE('', 'beng') AS english_tokens;
+
+CREATE TABLE sort_keys(id INT PRIMARY KEY, s VARCHAR(128), n INT);
+INSERT INTO sort_keys VALUES
+ (1,'Alpha',5),(2,'alpha',4),(3,'alpha ',3),(4,'alpha  ',2),
+ (5,'École',1),(6,'école',0),(7,'中国',NULL),(8,'中华',-1),
+ (9,'',NULL),(10,NULL,10),(11,'beta',-2),(12,'ALPHA',-3),
+ (13,CONCAT('alpha',CHAR(0),'beta'),-4),(14,'😀',-5);
+SELECT id, HEX(s), n FROM sort_keys ORDER BY s COLLATE utf8mb4_general_ci, n DESC, id;
+SELECT id, HEX(s), n FROM sort_keys ORDER BY s COLLATE utf8mb4_bin DESC, n, id;
+SELECT id, HEX(s), n FROM sort_keys ORDER BY s COLLATE utf8mb4_general_ci, s COLLATE utf8mb4_bin, HEX(s), n DESC, id, s DESC;
+SELECT id, HEX(s), n FROM sort_keys ORDER BY s COLLATE utf8mb4_general_ci, n DESC, id LIMIT 5 OFFSET 3;
+SELECT id, ROW_NUMBER() OVER (PARTITION BY s ORDER BY n DESC, id) AS rn FROM sort_keys ORDER BY id;
+SELECT HEX(s), COUNT(*) FROM sort_keys GROUP BY HEX(s) ORDER BY HEX(s);
+SELECT a.id, b.id FROM sort_keys a JOIN sort_keys b ON a.s=b.s ORDER BY a.id, b.id;
+
+# Compare index creation after load with index maintenance during DML.
+CREATE TABLE docs(id VARCHAR(32) PRIMARY KEY, title VARCHAR(128), body TEXT);
+INSERT INTO docs VALUES
+ ('a','中国人民银行','全文搜索 数据库 alpha alpha'),
+ ('b','南京市长江大桥','全文搜索 beta 数据库'),
+ ('c','English','alpha database performance'),
+ ('d','EMPTY',''),('e',NULL,NULL),
+ ('f','alpha beta','database database audit'),
+ ('g','研究生命起源','中国 数据库 全文搜索');
+ALTER TABLE docs ADD FULLTEXT INDEX ik_idx(title,body) WITH PARSER ik;
+ALTER TABLE docs ADD FULLTEXT INDEX beng_idx(body) WITH PARSER beng;
+SELECT id FROM docs WHERE MATCH(title,body) AGAINST('全文搜索 数据库') ORDER BY id;
+SELECT id, ROUND(MATCH(title,body) AGAINST('全文搜索 数据库'),8) AS score FROM docs WHERE MATCH(title,body) AGAINST('全文搜索 数据库') ORDER BY score DESC,id;
+SELECT id FROM docs WHERE MATCH(body) AGAINST('database alpha') ORDER BY id;
+SELECT id FROM docs WHERE MATCH(body) AGAINST('+database -audit' IN BOOLEAN MODE) ORDER BY id;
+SELECT id FROM docs WHERE MATCH(title,body) AGAINST('alpha 数据库') ORDER BY id LIMIT 2 OFFSET 1;
+SELECT id FROM docs WHERE MATCH(title,body) AGAINST('nonexistentzz') ORDER BY id;
+INSERT INTO docs VALUES ('h','全文搜索','alpha database 数据库');
+UPDATE docs SET body='audit beta 数据库' WHERE id='a';
+DELETE FROM docs WHERE id='c';
+SELECT id FROM docs WHERE MATCH(title,body) AGAINST('全文搜索 数据库') ORDER BY id;
+SELECT id FROM docs WHERE MATCH(body) AGAINST('database alpha') ORDER BY id;
+START TRANSACTION;
+UPDATE docs SET body='alpha alpha' WHERE id='b';
+ROLLBACK;
+SELECT id FROM docs WHERE MATCH(body) AGAINST('alpha') ORDER BY id;
+DROP DATABASE fts_hotpath_regression;

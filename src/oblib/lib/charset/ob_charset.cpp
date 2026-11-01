@@ -572,13 +572,20 @@ int ObCharset::strcmpsp(ObCollationType collation_type,
 {
   int result = 0;
   if (is_argument_valid(collation_type, str1, str1_len, str2, str2_len)) {
-    const ObCharsetInfo *cs = get_charset(collation_type);
-    result = cs->coll->strnncollsp(cs,
+    // Equal byte strings have equal collation weights, including PAD SPACE
+    // collations. Repeated sort keys need no decoding or weight lookup.
+    if (str1_len == str2_len && (str1 == str2 || 0 == str1_len
+        || 0 == MEMCMP(str1, str2, str1_len))) {
+      result = 0;
+    } else {
+      const ObCharsetInfo *cs = get_charset(collation_type);
+      result = cs->coll->strnncollsp(cs,
                                 reinterpret_cast<const unsigned char *>(str1),
                                 str1_len,
                                 reinterpret_cast<const unsigned char *>(str2),
                                 str2_len,
                                 cmp_endspace);
+    }
   }
   return result;
 }

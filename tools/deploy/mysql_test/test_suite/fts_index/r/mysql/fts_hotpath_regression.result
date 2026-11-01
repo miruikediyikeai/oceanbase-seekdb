@@ -1,0 +1,219 @@
+DROP DATABASE IF EXISTS fts_hotpath_regression;
+CREATE DATABASE fts_hotpath_regression;
+USE fts_hotpath_regression;
+SET NAMES utf8mb4;
+SET ob_query_timeout = 1000000000;
+SELECT TOKENIZE('中国人民银行 南京市长江大桥 三百二十公里 ＡＢＣ１２３ かな 한국어 😀', 'ik', '[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"长江大桥": 1}, {"公里": 1}, {"三百二十": 1}, {"ａｂｃ１２３": 1}, {"な": 1}, {"국": 1}, {"南京市": 1}, {"中国人民银行": 1}, {"한": 1}, {"어": 1}, {"か": 1}], "doc_len": 11}
+SELECT TOKENIZE('研究生命起源 中华人民共和国', 'ik', '[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]') AS tokens;
+tokens
+{"tokens": [{"共和国": 1}, {"研究生": 1}, {"人民共和国": 1}, {"研究": 1}, {"起源": 1}, {"中华人民": 1}, {"共和": 1}, {"国": 1}, {"中华": 1}, {"中华人民共和国": 1}, {"生命": 1}, {"华人": 1}, {"人民": 1}], "doc_len": 13}
+SELECT TOKENIZE('ALPHA alpha Alpha beta-beta the THE 123 123', 'beng', '[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"123": 2}, {"alpha": 3}, {"beta": 2}], "doc_len": 7}
+SELECT TOKENIZE(CONCAT('Abc', CHAR(0), 'Def', CHAR(9), 'GHI', CHAR(10), 'Jkl'), 'beng', '[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"abc": 1}, {"def": 1}, {"GHI": 1}, {"jkl": 1}], "doc_len": 4}
+SELECT TOKENIZE('I Istanbul İ ı École école', 'beng', '[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"école": 2}, {"istanbul": 1}], "doc_len": 3}
+SELECT TOKENIZE('cafe café cafe École ecole école', 'space', '[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"cafe": 3}, {"école": 3}], "doc_len": 6}
+SELECT TOKENIZE('café cafe café ecole école ecole', 'space', '[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"café": 3}, {"ecole": 3}], "doc_len": 6}
+SELECT TOKENIZE(CAST(REPEAT('alpha ', 200) AS CHAR), 'beng', '[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"alpha": 200}], "doc_len": 200}
+SELECT TOKENIZE(CAST(REPEAT('中国人民银行 ', 80) AS CHAR), 'ik', '[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"中国人民银行": 80}], "doc_len": 80}
+SELECT TOKENIZE('', 'ik') AS tokens, TOKENIZE('', 'beng') AS english_tokens;
+tokens	english_tokens
+[]	[]
+CREATE TABLE sort_keys(id INT PRIMARY KEY, s VARCHAR(128), n INT);
+INSERT INTO sort_keys VALUES
+(1,'Alpha',5),(2,'alpha',4),(3,'alpha ',3),(4,'alpha  ',2),
+(5,'École',1),(6,'école',0),(7,'中国',NULL),(8,'中华',-1),
+(9,'',NULL),(10,NULL,10),(11,'beta',-2),(12,'ALPHA',-3),
+(13,CONCAT('alpha',CHAR(0),'beta'),-4),(14,'😀',-5);
+SELECT id, HEX(s), n FROM sort_keys ORDER BY s COLLATE utf8mb4_general_ci, n DESC, id;
+id	HEX(s)	n
+10	NULL	10
+9		NULL
+13	616C7068610062657461	-4
+1	416C706861	5
+2	616C706861	4
+3	616C70686120	3
+4	616C7068612020	2
+12	414C504841	-3
+11	62657461	-2
+5	C389636F6C65	1
+6	C3A9636F6C65	0
+8	E4B8ADE58D8E	-1
+7	E4B8ADE59BBD	NULL
+14	F09F9880	-5
+SELECT id, HEX(s), n FROM sort_keys ORDER BY s COLLATE utf8mb4_bin DESC, n, id;
+id	HEX(s)	n
+14	F09F9880	-5
+7	E4B8ADE59BBD	NULL
+8	E4B8ADE58D8E	-1
+6	C3A9636F6C65	0
+5	C389636F6C65	1
+11	62657461	-2
+4	616C7068612020	2
+3	616C70686120	3
+2	616C706861	4
+13	616C7068610062657461	-4
+1	416C706861	5
+12	414C504841	-3
+9		NULL
+10	NULL	10
+SELECT id, HEX(s), n FROM sort_keys ORDER BY s COLLATE utf8mb4_general_ci, s COLLATE utf8mb4_bin, HEX(s), n DESC, id, s DESC;
+id	HEX(s)	n
+10	NULL	10
+9		NULL
+13	616C7068610062657461	-4
+12	414C504841	-3
+1	416C706861	5
+2	616C706861	4
+3	616C70686120	3
+4	616C7068612020	2
+11	62657461	-2
+5	C389636F6C65	1
+6	C3A9636F6C65	0
+8	E4B8ADE58D8E	-1
+7	E4B8ADE59BBD	NULL
+14	F09F9880	-5
+SELECT id, HEX(s), n FROM sort_keys ORDER BY s COLLATE utf8mb4_general_ci, n DESC, id LIMIT 5 OFFSET 3;
+id	HEX(s)	n
+1	416C706861	5
+2	616C706861	4
+3	616C70686120	3
+4	616C7068612020	2
+12	414C504841	-3
+SELECT id, ROW_NUMBER() OVER (PARTITION BY s ORDER BY n DESC, id) AS rn FROM sort_keys ORDER BY id;
+id	rn
+1	1
+2	2
+3	3
+4	4
+5	1
+6	2
+7	1
+8	1
+9	1
+10	1
+11	1
+12	5
+13	1
+14	1
+SELECT HEX(s), COUNT(*) FROM sort_keys GROUP BY HEX(s) ORDER BY HEX(s);
+HEX(s)	COUNT(*)
+NULL	1
+	1
+414C504841	1
+416C706861	1
+616C706861	1
+616C7068610062657461	1
+616C70686120	1
+616C7068612020	1
+62657461	1
+C389636F6C65	1
+C3A9636F6C65	1
+E4B8ADE58D8E	1
+E4B8ADE59BBD	1
+F09F9880	1
+SELECT a.id, b.id FROM sort_keys a JOIN sort_keys b ON a.s=b.s ORDER BY a.id, b.id;
+id	id
+1	1
+1	2
+1	3
+1	4
+1	12
+2	1
+2	2
+2	3
+2	4
+2	12
+3	1
+3	2
+3	3
+3	4
+3	12
+4	1
+4	2
+4	3
+4	4
+4	12
+5	5
+5	6
+6	5
+6	6
+7	7
+8	8
+9	9
+11	11
+12	1
+12	2
+12	3
+12	4
+12	12
+13	13
+14	14
+CREATE TABLE docs(id VARCHAR(32) PRIMARY KEY, title VARCHAR(128), body TEXT);
+INSERT INTO docs VALUES
+('a','中国人民银行','全文搜索 数据库 alpha alpha'),
+('b','南京市长江大桥','全文搜索 beta 数据库'),
+('c','English','alpha database performance'),
+('d','EMPTY',''),('e',NULL,NULL),
+('f','alpha beta','database database audit'),
+('g','研究生命起源','中国 数据库 全文搜索');
+ALTER TABLE docs ADD FULLTEXT INDEX ik_idx(title,body) WITH PARSER ik;
+ALTER TABLE docs ADD FULLTEXT INDEX beng_idx(body) WITH PARSER beng;
+SELECT id FROM docs WHERE MATCH(title,body) AGAINST('全文搜索 数据库') ORDER BY id;
+id
+a
+b
+g
+SELECT id, ROUND(MATCH(title,body) AGAINST('全文搜索 数据库'),8) AS score FROM docs WHERE MATCH(title,body) AGAINST('全文搜索 数据库') ORDER BY score DESC,id;
+id	score
+a	0.90145393
+b	0.90145393
+g	0.85941722
+SELECT id FROM docs WHERE MATCH(body) AGAINST('database alpha') ORDER BY id;
+id
+a
+c
+f
+SELECT id FROM docs WHERE MATCH(body) AGAINST('+database -audit' IN BOOLEAN MODE) ORDER BY id;
+id
+c
+SELECT id FROM docs WHERE MATCH(title,body) AGAINST('alpha 数据库') ORDER BY id LIMIT 2 OFFSET 1;
+id
+b
+c
+SELECT id FROM docs WHERE MATCH(title,body) AGAINST('nonexistentzz') ORDER BY id;
+id
+INSERT INTO docs VALUES ('h','全文搜索','alpha database 数据库');
+UPDATE docs SET body='audit beta 数据库' WHERE id='a';
+DELETE FROM docs WHERE id='c';
+SELECT id FROM docs WHERE MATCH(title,body) AGAINST('全文搜索 数据库') ORDER BY id;
+id
+a
+b
+g
+h
+SELECT id FROM docs WHERE MATCH(body) AGAINST('database alpha') ORDER BY id;
+id
+f
+h
+START TRANSACTION;
+UPDATE docs SET body='alpha alpha' WHERE id='b';
+ROLLBACK;
+SELECT id FROM docs WHERE MATCH(body) AGAINST('alpha') ORDER BY id;
+id
+h
+DROP DATABASE fts_hotpath_regression;

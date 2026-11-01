@@ -23,6 +23,22 @@ namespace oceanbase
 namespace storage
 {
 
+namespace
+{
+int compare_binary_retrieval_ids(const ObDatum &l, const ObDatum &r, int &cmp_ret,
+                                const ObDatumAccessContext *)
+{
+  if (l.is_null() || r.is_null()) {
+    cmp_ret = l.is_null() ? (r.is_null() ? 0 : -1) : 1;
+  } else {
+    const int64_t common_len = MIN(l.len_, r.len_);
+    const int cmp = common_len == 0 ? 0 : MEMCMP(l.ptr_, r.ptr_, common_len);
+    cmp_ret = cmp != 0 ? (cmp < 0 ? -1 : 1) : (l.len_ > r.len_) - (l.len_ < r.len_);
+  }
+  return OB_SUCCESS;
+}
+}
+
 ObSRMergeCmp::ObSRMergeCmp()
   : cmp_func_(nullptr),
     iter_ids_(nullptr),
@@ -40,7 +56,10 @@ int ObSRMergeCmp::init(
   } else {
     iter_ids_ = iter_ids;
     common::ObDatumBasicFuncs *basic_funcs = ObDatumFuncs::get_basic_func(id_meta.type_, id_meta.cs_type_);
-    cmp_func_ = basic_funcs->null_first_cmp_;
+    // Binary document IDs have bytewise order. Resolve it once rather than
+    // dispatching through the charset registry on every heap comparison.
+    cmp_func_ = id_meta.type_ == ObVarcharType && id_meta.cs_type_ == CS_TYPE_BINARY
+        ? compare_binary_retrieval_ids : (nullptr == basic_funcs ? nullptr : basic_funcs->null_first_cmp_);
     if (OB_ISNULL(cmp_func_)) {
       ret = OB_ERR_UNEXPECTED;
     } else {
@@ -348,15 +367,19 @@ int ObSRDaaTIterImpl::process_collected_row(const ObDatum &id_datum, const doubl
 
 int ObSRDaaTIterImpl::filter_on_demand(const int64_t count, const double relevance, bool &need_project)
 {
+  // COUNT and other scans without a score predicate do not touch expression
+  // state. Avoid saving and restoring the batch context for every merged ID.
+  if (!iter_param_->need_filter()) {
+    need_project = true;
+    return OB_SUCCESS;
+  }
   int ret = OB_SUCCESS;
   ObExpr *filter_expr = iter_param_->filter_expr_;
   ObExpr *relevance_proj_expr = iter_param_->relevance_proj_expr_;
   ObEvalCtx *eval_ctx = iter_param_->eval_ctx_;
   ObEvalCtx::BatchInfoScopeGuard guard(*eval_ctx);
 
-  if (!iter_param_->need_filter()) {
-    need_project = true;
-  } else if (eval_ctx->is_vectorized()) {
+  if (eval_ctx->is_vectorized()) {
     if (OB_UNLIKELY(count >= eval_ctx->max_batch_size_)) {
       ret = OB_ERR_UNEXPECTED;
     } else {

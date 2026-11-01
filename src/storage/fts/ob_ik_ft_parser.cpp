@@ -168,14 +168,14 @@ int ObIKFTParser::process_one_char(TokenizeContext &ctx,
     for (int64_t i = 0; OB_SUCC(ret) && i < doc_seg_cnt_; ++i) {
       if (OB_ISNULL(doc_segs_[i])) {
         ret = OB_ERR_UNEXPECTED;
-      } else if (OB_FAIL(doc_segs_[i]->process(ctx))) {
+      } else if (OB_FAIL(doc_segs_[i]->do_process(ctx, ch, char_len, type))) {
       }
     }
   } else {
     for (ObList<ObIIKProcessor *, ObIAllocator>::iterator iter = segmenters_.begin();
          OB_SUCC(ret) && iter != segmenters_.end();
          iter++) {
-      if (OB_FAIL((*iter)->process(ctx))) {
+      if (OB_FAIL((*iter)->do_process(ctx, ch, char_len, type))) {
       }
     }
   }

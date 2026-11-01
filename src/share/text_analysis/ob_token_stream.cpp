@@ -24,6 +24,17 @@ namespace oceanbase
 namespace share
 {
 
+namespace
+{
+inline int64_t token_char_length(const ObCharsetInfo *cs, const char *pos, const char *end)
+{
+  // Single-byte ASCII is valid in the ASCII-compatible encodings. Keep the
+  // charset decoder for UTF-16, non-ASCII bytes and malformed sequences.
+  return cs->mbminlen == 1 && static_cast<unsigned char>(*pos) < 0x80
+      ? 1 : ob_mbcharlen_ptr(cs, pos, end);
+}
+}
+
 ObTextTokenizer::ObTextTokenizer()
   : ObITokenStream(),
     input_doc_(nullptr),
@@ -98,7 +109,7 @@ int ObTextWhitespaceTokenizer::get_next(ObDatum &next_token, int64_t &token_freq
     int64_t token_len = 0;
     // to next non-whitespace pos
     while (OB_SUCC(ret) && found_delimiter()) {
-      const int64_t c_len = ob_mbcharlen_ptr(cs_, doc + trav_pos_, doc + doc_len);
+      const int64_t c_len = token_char_length(cs_, doc + trav_pos_, doc + doc_len);
       trav_pos_ += c_len;
       if (trav_pos_ >= doc_len || 0 == c_len) {// if char is invalid, just skip the rest of document
         iter_end_ = true;
@@ -112,7 +123,7 @@ int ObTextWhitespaceTokenizer::get_next(ObDatum &next_token, int64_t &token_freq
 
     // to next whitespace pos
     while (OB_SUCC(ret) && !found_delimiter()) {
-      const int64_t c_len = ob_mbcharlen_ptr(cs_, doc + trav_pos_, doc + doc_len);
+      const int64_t c_len = token_char_length(cs_, doc + trav_pos_, doc + doc_len);
       trav_pos_ += c_len;
       token_len += c_len;
       if (trav_pos_ >= doc_len || 0 == c_len) {
@@ -300,6 +311,8 @@ int ObBasicEnglishNormalizer::get_next(ObDatum &next_token, int64_t &token_freq)
         // lowercases to itself plus 32, in every charset this server ships.
         if (c >= 0x80 || c == 'I') {
           plain_ascii = false;
+        } else {
+          lower_buf_[i] = static_cast<char>(c >= 'A' && c <= 'Z' ? c - 'A' + 'a' : c);
         }
       }
       if (!plain_ascii) {
@@ -310,13 +323,6 @@ int ObBasicEnglishNormalizer::get_next(ObDatum &next_token, int64_t &token_freq)
           next_token.set_string(norm_lower_token);
         }
       } else {
-        for (uint32_t i = 0; i < norm_token_len; ++i) {
-          unsigned char c = static_cast<unsigned char>(norm_token_ptr[i]);
-          if (c >= 'A' && c <= 'Z') {
-            c = static_cast<unsigned char>(c - 'A' + 'a');
-          }
-          lower_buf_[i] = static_cast<char>(c);
-        }
         next_token.set_string(lower_buf_, norm_token_len);
       }
     } else {
