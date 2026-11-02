@@ -785,10 +785,14 @@ int ObStaticEngineCG::generate_spec_final(ObLogicalOperator &op, ObOpSpec &spec)
     ObTableScanSpec &tsc_spec = static_cast<ObTableScanSpec&>(spec);
     ObDASScanCtDef &scan_ctdef = tsc_spec.tsc_ctdef_.scan_ctdef_;
     ObDASScanCtDef *lookup_ctdef = tsc_spec.tsc_ctdef_.lookup_ctdef_;
-    if (OB_FAIL(scan_ctdef.pd_expr_spec_.set_calc_exprs(spec.calc_exprs_, tsc_spec.max_batch_size_))) {
+    // FTS expands the words in batches, but fetches source documents one at
+    // a time. Keep DAS (including the rowkey/doc-id scans) in scalar mode;
+    // a vectorized SSTable reader must not be driven by get_next_row().
+    const int64_t scan_batch_size = tsc_spec.is_fts_ddl_ ? 0 : tsc_spec.max_batch_size_;
+    if (OB_FAIL(scan_ctdef.pd_expr_spec_.set_calc_exprs(spec.calc_exprs_, scan_batch_size))) {
     } else if (lookup_ctdef != nullptr &&
-        OB_FAIL(lookup_ctdef->pd_expr_spec_.set_calc_exprs(spec.calc_exprs_, tsc_spec.max_batch_size_))) {
-    } else if (OB_FAIL(tsc_spec.tsc_ctdef_.attach_spec_.set_calc_exprs(spec.calc_exprs_, tsc_spec.max_batch_size_))) {
+        OB_FAIL(lookup_ctdef->pd_expr_spec_.set_calc_exprs(spec.calc_exprs_, scan_batch_size))) {
+    } else if (OB_FAIL(tsc_spec.tsc_ctdef_.attach_spec_.set_calc_exprs(spec.calc_exprs_, scan_batch_size))) {
     }
   }
 
@@ -3683,7 +3687,17 @@ int ObStaticEngineCG::generate_normal_tsc(ObLogTableScan &op, ObTableScanSpec &s
       } else if (ddl_table_schema->is_fts_index_aux() || ddl_table_schema->is_fts_doc_word_aux()) {
         spec.is_fts_ddl_ = true;
         spec.is_fts_index_aux_ = ddl_table_schema->is_fts_index_aux();
-        spec.max_batch_size_ = 0; // TODO: @jinzhu, remove me later after support post-building fts index vectorization.
+        // Only the four generated columns can be expanded directly from one
+        // document's word cache. Other projections retain the scalar path.
+        bool can_batch = op.get_output_exprs().count() == share::ObFtsIndexBuilderUtil::OB_FTS_INDEX_OR_DOC_WORD_TABLE_COL_CNT
+            && op.get_filter_exprs().empty() && nullptr == spec.pdml_partition_id_;
+        for (int64_t i = 0; can_batch && i < op.get_output_exprs().count(); ++i) {
+          const ObRawExpr *expr = op.get_output_exprs().at(i);
+          can_batch = expr != nullptr && expr->is_vectorize_result();
+        }
+        if (!can_batch) {
+          spec.max_batch_size_ = 0;
+        }
         if (OB_UNLIKELY(ddl_table_schema->get_parser_name_str().empty())) {
           ret = OB_ERR_UNEXPECTED;
         } else {

@@ -1,0 +1,185 @@
+DROP DATABASE IF EXISTS fts_build_batch_regression;
+CREATE DATABASE fts_build_batch_regression;
+USE fts_build_batch_regression;
+SET NAMES utf8mb4;
+SET ob_query_timeout=1000000000;
+SET group_concat_max_len=1000000;
+CREATE TABLE digits(n INT PRIMARY KEY);
+INSERT INTO digits VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
+CREATE TABLE docs(id INT PRIMARY KEY, title VARCHAR(128), body LONGTEXT);
+INSERT INTO docs
+SELECT n, CONCAT('文档 alpha ',n),
+CASE WHEN n%17=0 THEN NULL WHEN n%19=0 THEN ''
+            WHEN n%3=0 THEN '中国人民银行 数据库 alpha alpha gamma'
+            WHEN n%3=1 THEN '南京市长江大桥 数据库 beta alpha'
+            ELSE 'English database performance beta gamma' END
+FROM (SELECT 1+a.n+10*b.n+100*c.n+1000*d.n AS n FROM digits a,digits b,digits c,digits d) s
+WHERE n<=1025;
+INSERT INTO docs VALUES (2001,NULL,NULL),(2002,'',''),(2003,'empty','the and of');
+INSERT INTO docs
+SELECT 3000,'large alpha',GROUP_CONCAT(CONCAT('word',LPAD(n,5,'0')) ORDER BY n SEPARATOR ' ')
+FROM (SELECT 1+a.n+10*b.n+100*c.n+1000*d.n AS n FROM digits a,digits b,digits c,digits d) s
+WHERE n<=1300;
+INSERT INTO docs VALUES (3001,'large 中国',REPEAT('中国人民银行 alpha 数据库 ',1500));
+sstable_present
+1
+CREATE FULLTEXT INDEX ik_all ON docs(title,body) WITH PARSER ik;
+CREATE FULLTEXT INDEX beng_body ON docs(body) WITH PARSER beng;
+SET ob_enable_index_direct_select=on;
+COUNT(*)	total_words	total_lengths	posting_checksum
+5269	10071	1722106	11255409833712
+COUNT(*)	total_words	total_lengths	posting_checksum
+5269	10071	1722106	11255409833712
+SELECT COUNT(*),SUM(id),SUM(CRC32(id)) FROM docs WHERE MATCH(title,body) AGAINST('数据库 alpha gamma');
+COUNT(*)	SUM(id)	SUM(CRC32(id))
+1027	531826	2104716372639
+SELECT COUNT(*),SUM(id),SUM(CRC32(id)) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+COUNT(*)	SUM(id)	SUM(CRC32(id))
+916	472465	1880121341112
+SELECT id FROM docs WHERE MATCH(body) AGAINST('word00001 word00256 word00257 word01300') ORDER BY id;
+id
+3000
+SELECT id FROM docs WHERE MATCH(title,body) AGAINST('+数据库 -gamma' IN BOOLEAN MODE) ORDER BY id LIMIT 8 OFFSET 250;
+id
+841
+844
+847
+853
+856
+859
+862
+865
+SELECT id,ROUND(MATCH(body) AGAINST('alpha beta gamma'),8) AS score FROM docs
+WHERE MATCH(body) AGAINST('alpha beta gamma') ORDER BY score DESC,id LIMIT 10 OFFSET 257;
+id	score
+870	0.71428571
+873	0.71428571
+876	0.71428571
+879	0.71428571
+882	0.71428571
+885	0.71428571
+888	0.71428571
+891	0.71428571
+894	0.71428571
+897	0.71428571
+UPDATE docs SET body='replacement alpha 数据库' WHERE id=3000;
+DELETE FROM docs WHERE id=3001;
+SELECT id FROM docs WHERE MATCH(body) AGAINST('word01300 replacement') ORDER BY id;
+id
+3000
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(title,body) AGAINST('数据库 alpha');
+COUNT(*)	SUM(id)
+1026	528825
+DROP INDEX beng_body ON docs;
+CREATE FULLTEXT INDEX beng_body ON docs(body) WITH PARSER beng;
+SELECT COUNT(*),SUM(id),SUM(CRC32(id)) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+COUNT(*)	SUM(id)	SUM(CRC32(id))
+916	472464	1878863381834
+CREATE TABLE partitioned_docs(id INT PRIMARY KEY,body TEXT) PARTITION BY HASH(id) PARTITIONS 4;
+INSERT INTO partitioned_docs SELECT id,body FROM docs;
+CREATE FULLTEXT INDEX part_ft ON partitioned_docs(body) WITH PARSER beng;
+SELECT COUNT(*),SUM(id),SUM(CRC32(id)) FROM partitioned_docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+COUNT(*)	SUM(id)	SUM(CRC32(id))
+916	472464	1878863381834
+CREATE TABLE keys_to_sort(id INT PRIMARY KEY,b VARBINARY(128),s VARCHAR(128));
+INSERT INTO keys_to_sort VALUES
+(1,NULL,NULL),(2,'',''),(3,'a','a'),(4,'a ','a '),(5,'a  ','a  '),
+(6,UNHEX('610062'),'A'),(7,UNHEX('6100'),'á'),(8,UNHEX('00'),'école'),
+(9,UNHEX('ff'),'École'),(10,UNHEX('80'),'中国'),(11,UNHEX('0000'),'😀'),
+(12,'a','A'),(13,'a ','a '),(14,'aa','aa');
+SELECT id,HEX(b) FROM keys_to_sort ORDER BY b,id;
+id	HEX(b)
+1	NULL
+2	
+8	00
+11	0000
+3	61
+12	61
+7	6100
+6	610062
+4	6120
+13	6120
+5	612020
+14	6161
+10	80
+9	FF
+SELECT id,HEX(b) FROM keys_to_sort ORDER BY b DESC,id LIMIT 10 OFFSET 2;
+id	HEX(b)
+14	6161
+5	612020
+4	6120
+13	6120
+6	610062
+7	6100
+3	61
+12	61
+11	0000
+8	00
+SELECT id,ROW_NUMBER() OVER (PARTITION BY b ORDER BY id) AS rn FROM keys_to_sort ORDER BY id;
+id	rn
+1	1
+2	1
+3	1
+4	1
+5	1
+6	1
+7	1
+8	1
+9	1
+10	1
+11	1
+12	2
+13	2
+14	1
+SELECT id,HEX(s) FROM keys_to_sort ORDER BY s COLLATE utf8mb4_general_ci,b,id;
+id	HEX(s)
+1	NULL
+2	
+3	61
+12	41
+7	C3A1
+6	41
+4	6120
+13	6120
+5	612020
+14	6161
+8	C3A9636F6C65
+9	C389636F6C65
+10	E4B8ADE59BBD
+11	F09F9880
+SELECT id,HEX(s) FROM keys_to_sort ORDER BY s COLLATE utf8mb4_bin DESC,b DESC,id;
+id	HEX(s)
+11	F09F9880
+10	E4B8ADE59BBD
+8	C3A9636F6C65
+7	C3A1
+9	C389636F6C65
+14	6161
+5	612020
+4	6120
+13	6120
+3	61
+6	41
+12	41
+2	
+1	NULL
+SELECT a.id,b.id FROM keys_to_sort a JOIN keys_to_sort b ON a.b=b.b ORDER BY a.id,b.id;
+id	id
+2	2
+3	3
+3	12
+4	4
+4	13
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	3
+12	12
+13	4
+13	13
+14	14
+DROP DATABASE fts_build_batch_regression;

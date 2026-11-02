@@ -1,0 +1,16 @@
+{
+  "base_commit": "f8cfb090a3ae0426b79df48065bab0bf46ac11b4",
+  "source_sha256": {
+    "src/share/datum/ob_datum_cmp_func_def.h": "a67519ab2fbfb6cf1dcbaefe3be6f1f9143a0a86fcfec128f66d33e8808b8c49",
+    "src/sql/code_generator/ob_static_engine_cg.cpp": "4669c2dbca143b800ec641d765732c378132b5fa94c7604edbc0b0cf02ec73e5",
+    "src/sql/engine/table/ob_table_scan_op.cpp": "b9d1b35435d74789511e058df7dd17adf8abe3cb1f56ed51410dd1068d996f92",
+    "src/sql/engine/table/ob_table_scan_op.h": "b8195032eef5e76bf3734217a6c9f8759c5d2c9cf146416c97879b406cdf7af5"
+  },
+  "binary_sha256": "9070103486318f9be18818e9951b586152f38b826bc467da38323cb40db23f3b",
+  "source_mirror_matches": true,
+  "validation_log": "validation.txt",
+  "mysqltest_suites_passed": 9,
+  "differential_result_sets": 1668,
+  "ordinary_sql_result_sha256": "1572c1ae4609e2d6f4ce7047748043d9a302892b4394faa7ca4371b80c9c18d4",
+  "note": "Expected mysqltest results were recorded on the base executable. Performance evidence is local incremental A/B only."
+}

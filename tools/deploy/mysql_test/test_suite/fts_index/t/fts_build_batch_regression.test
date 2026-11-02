@@ -1,0 +1,87 @@
+# Expand one document at a time, including empty documents and a document
+# with more terms than an execution batch. Expected output is recorded on
+# the scalar implementation before changing the executable.
+--disable_warnings
+DROP DATABASE IF EXISTS fts_build_batch_regression;
+--enable_warnings
+CREATE DATABASE fts_build_batch_regression;
+USE fts_build_batch_regression;
+SET NAMES utf8mb4;
+SET ob_query_timeout=1000000000;
+SET group_concat_max_len=1000000;
+CREATE TABLE digits(n INT PRIMARY KEY);
+INSERT INTO digits VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
+CREATE TABLE docs(id INT PRIMARY KEY, title VARCHAR(128), body LONGTEXT);
+INSERT INTO docs
+SELECT n, CONCAT('文档 alpha ',n),
+       CASE WHEN n%17=0 THEN NULL WHEN n%19=0 THEN ''
+            WHEN n%3=0 THEN '中国人民银行 数据库 alpha alpha gamma'
+            WHEN n%3=1 THEN '南京市长江大桥 数据库 beta alpha'
+            ELSE 'English database performance beta gamma' END
+FROM (SELECT 1+a.n+10*b.n+100*c.n+1000*d.n AS n FROM digits a,digits b,digits c,digits d) s
+WHERE n<=1025;
+INSERT INTO docs VALUES (2001,NULL,NULL),(2002,'',''),(2003,'empty','the and of');
+INSERT INTO docs
+SELECT 3000,'large alpha',GROUP_CONCAT(CONCAT('word',LPAD(n,5,'0')) ORDER BY n SEPARATOR ' ')
+FROM (SELECT 1+a.n+10*b.n+100*c.n+1000*d.n AS n FROM digits a,digits b,digits c,digits d) s
+WHERE n<=1300;
+INSERT INTO docs VALUES (3001,'large 中国',REPEAT('中国人民银行 alpha 数据库 ',1500));
+# Force the source through SSTable block scanning, not only memtables.
+--disable_query_log
+let $data_id = query_get_value(SELECT table_id FROM oceanbase.__all_table WHERE table_name='docs' AND database_id=(SELECT database_id FROM oceanbase.__all_database WHERE database_name='fts_build_batch_regression'), table_id, 1);
+let $tablet_id = query_get_value(SELECT tablet_id FROM oceanbase.__all_tablet_to_table WHERE table_id=$data_id, tablet_id, 1);
+eval ALTER SYSTEM MINOR FREEZE TABLET_ID=$tablet_id;
+let $wait_timeout=120;
+let $wait_condition=SELECT COUNT(*)=0 FROM oceanbase.__all_virtual_tablet_memstore_info WHERE tablet_id=$tablet_id AND is_active='NO';
+--source include/wait_condition.inc
+eval SELECT COUNT(*)>0 AS sstable_present FROM oceanbase.__all_virtual_table_mgr WHERE tablet_id=$tablet_id AND data_block_count>0;
+--enable_query_log
+CREATE FULLTEXT INDEX ik_all ON docs(title,body) WITH PARSER ik;
+CREATE FULLTEXT INDEX beng_body ON docs(body) WITH PARSER beng;
+# Check every posting and both auxiliary layouts, not just query hit counts.
+SET ob_enable_index_direct_select=on;
+--disable_query_log
+let $data_id = query_get_value(SELECT table_id FROM oceanbase.__all_table WHERE table_name='docs' AND database_id=(SELECT database_id FROM oceanbase.__all_database WHERE database_name='fts_build_batch_regression'), table_id, 1);
+let $inv_id = query_get_value(SELECT table_id FROM oceanbase.__all_table WHERE data_table_id=$data_id AND table_name LIKE '%beng_body' AND index_type=13, table_id, 1);
+let $inv = query_get_value(SELECT table_name FROM oceanbase.__all_table WHERE table_id=$inv_id, table_name, 1);
+let $dw = query_get_value(SELECT table_name FROM oceanbase.__all_table WHERE data_table_id=$data_id AND table_name LIKE '%beng_body_fts_doc_word' AND index_type=14, table_name, 1);
+let $rk = query_get_value(SELECT table_name FROM oceanbase.__all_table WHERE data_table_id=$data_id AND index_type=11, table_name, 1);
+let $word = query_get_value(SELECT column_name FROM oceanbase.__all_column WHERE table_id=$inv_id AND column_name LIKE '__word_segment_%', column_name, 1);
+let $doc = query_get_value(SELECT column_name FROM oceanbase.__all_column WHERE table_id=$inv_id AND column_name LIKE '__doc_id_%', column_name, 1);
+let $wc = query_get_value(SELECT column_name FROM oceanbase.__all_column WHERE table_id=$inv_id AND column_name LIKE '__word_count_%', column_name, 1);
+let $dl = query_get_value(SELECT column_name FROM oceanbase.__all_column WHERE table_id=$inv_id AND column_name LIKE '__doc_length_%', column_name, 1);
+eval SELECT COUNT(*),SUM(i.$wc) AS total_words,SUM(i.$dl) AS total_lengths,SUM(CRC32(CONCAT(r.id,':',HEX(i.$word),':',i.$wc,':',i.$dl))) AS posting_checksum FROM $inv i JOIN $rk r ON i.$doc=r.$doc;
+eval SELECT COUNT(*),SUM(i.$wc) AS total_words,SUM(i.$dl) AS total_lengths,SUM(CRC32(CONCAT(r.id,':',HEX(i.$word),':',i.$wc,':',i.$dl))) AS posting_checksum FROM $dw i JOIN $rk r ON i.$doc=r.$doc;
+--enable_query_log
+SELECT COUNT(*),SUM(id),SUM(CRC32(id)) FROM docs WHERE MATCH(title,body) AGAINST('数据库 alpha gamma');
+SELECT COUNT(*),SUM(id),SUM(CRC32(id)) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+SELECT id FROM docs WHERE MATCH(body) AGAINST('word00001 word00256 word00257 word01300') ORDER BY id;
+SELECT id FROM docs WHERE MATCH(title,body) AGAINST('+数据库 -gamma' IN BOOLEAN MODE) ORDER BY id LIMIT 8 OFFSET 250;
+SELECT id,ROUND(MATCH(body) AGAINST('alpha beta gamma'),8) AS score FROM docs
+WHERE MATCH(body) AGAINST('alpha beta gamma') ORDER BY score DESC,id LIMIT 10 OFFSET 257;
+UPDATE docs SET body='replacement alpha 数据库' WHERE id=3000;
+DELETE FROM docs WHERE id=3001;
+SELECT id FROM docs WHERE MATCH(body) AGAINST('word01300 replacement') ORDER BY id;
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(title,body) AGAINST('数据库 alpha');
+DROP INDEX beng_body ON docs;
+CREATE FULLTEXT INDEX beng_body ON docs(body) WITH PARSER beng;
+SELECT COUNT(*),SUM(id),SUM(CRC32(id)) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+CREATE TABLE partitioned_docs(id INT PRIMARY KEY,body TEXT) PARTITION BY HASH(id) PARTITIONS 4;
+INSERT INTO partitioned_docs SELECT id,body FROM docs;
+CREATE FULLTEXT INDEX part_ft ON partitioned_docs(body) WITH PARSER beng;
+SELECT COUNT(*),SUM(id),SUM(CRC32(id)) FROM partitioned_docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+# Binary ordering must retain trailing spaces and embedded zero bytes;
+# case-insensitive ordering must retain collation and PAD SPACE semantics.
+CREATE TABLE keys_to_sort(id INT PRIMARY KEY,b VARBINARY(128),s VARCHAR(128));
+INSERT INTO keys_to_sort VALUES
+ (1,NULL,NULL),(2,'',''),(3,'a','a'),(4,'a ','a '),(5,'a  ','a  '),
+ (6,UNHEX('610062'),'A'),(7,UNHEX('6100'),'á'),(8,UNHEX('00'),'école'),
+ (9,UNHEX('ff'),'École'),(10,UNHEX('80'),'中国'),(11,UNHEX('0000'),'😀'),
+ (12,'a','A'),(13,'a ','a '),(14,'aa','aa');
+SELECT id,HEX(b) FROM keys_to_sort ORDER BY b,id;
+SELECT id,HEX(b) FROM keys_to_sort ORDER BY b DESC,id LIMIT 10 OFFSET 2;
+SELECT id,ROW_NUMBER() OVER (PARTITION BY b ORDER BY id) AS rn FROM keys_to_sort ORDER BY id;
+SELECT id,HEX(s) FROM keys_to_sort ORDER BY s COLLATE utf8mb4_general_ci,b,id;
+SELECT id,HEX(s) FROM keys_to_sort ORDER BY s COLLATE utf8mb4_bin DESC,b DESC,id;
+SELECT a.id,b.id FROM keys_to_sort a JOIN keys_to_sort b ON a.b=b.b ORDER BY a.id,b.id;
+DROP DATABASE fts_build_batch_regression;

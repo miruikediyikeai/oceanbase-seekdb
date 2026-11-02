@@ -2205,6 +2205,9 @@ int ObTableScanOp::inner_get_next_batch(const int64_t max_row_cnt)
   if (OB_UNLIKELY(rand_scan_processor_.use_rand_scan())) {
     if (OB_FAIL(rand_scan_processor_.inner_get_next_batch(max_row_cnt))) {
     }
+  } else if (OB_UNLIKELY(MY_SPEC.is_fts_ddl_)) {
+    if (OB_FAIL(inner_get_next_fts_index_batch(max_row_cnt))) {
+    }
   } else if (OB_FAIL(inner_get_next_batch_for_tsc(max_row_cnt))) {
   }
 
@@ -3623,6 +3626,88 @@ int ObTableScanOp::fill_generated_cellid_mbr(
         eval_info->projected_ = true;
       }
     }
+  }
+  return ret;
+}
+
+int ObTableScanOp::inner_get_next_fts_index_batch(const int64_t max_row_cnt)
+{
+  int ret = OB_SUCCESS;
+  clear_evaluated_flag();
+  brs_.size_ = 0;
+  brs_.end_ = false;
+  ObEvalCtx::BatchInfoScopeGuard guard(eval_ctx_);
+  guard.set_batch_idx(0);
+  guard.set_batch_size(1);
+  if (max_row_cnt <= 0) {
+    brs_.end_ = true;
+    return ret;
+  } else if (nullptr != tsc_rtdef_.scan_rtdef_.sample_info_) {
+    // Sampling projects the source document rather than its expanded words.
+    // DAS remains scalar for both the sampling pass and the later full pass.
+    if (OB_FAIL(inner_get_next_row_implement())) {
+      if (OB_ITER_END == ret) {
+        ret = OB_SUCCESS;
+        brs_.end_ = true;
+      }
+    } else {
+      brs_.size_ = 1;
+      brs_.all_rows_active_ = true;
+    }
+    return ret;
+  }
+  blocksstable::ObDatumRow *row = nullptr;
+  if (OB_FAIL(fts_index_.get_next_row(row))) {
+    if (OB_ITER_END == ret) {
+      // Reading the source document still uses the original scalar path,
+      // including LOB access, limits and DDL checksum accounting.
+      if (OB_FAIL(fetch_next_fts_index_rows())) {
+      } else if (OB_FAIL(fts_index_.get_next_row(row))) {
+      }
+    }
+  }
+  if (OB_ITER_END == ret) {
+    ret = OB_SUCCESS;
+    brs_.end_ = true;
+  } else if (OB_SUCC(ret)) {
+    guard.set_batch_size(max_row_cnt);
+    const int64_t col_cnt = share::ObFtsIndexBuilderUtil::OB_FTS_INDEX_OR_DOC_WORD_TABLE_COL_CNT;
+    ObExpr *exprs[share::ObFtsIndexBuilderUtil::OB_FTS_INDEX_OR_DOC_WORD_TABLE_COL_CNT];
+    const ObObjDatumMapType *types = MY_SPEC.is_fts_index_aux_
+        ? ObFTIndexRowCache::FTS_INDEX_TYPES : ObFTIndexRowCache::FTS_DOC_WORD_TYPES;
+    const ObExprOperatorType *expr_types = MY_SPEC.is_fts_index_aux_
+        ? ObFTIndexRowCache::FTS_INDEX_EXPR_TYPE : ObFTIndexRowCache::FTS_DOC_WORD_EXPR_TYPE;
+    for (int64_t i = 0; OB_SUCC(ret) && i < col_cnt; ++i) {
+      if (OB_FAIL(get_output_fts_col_expr_by_type(expr_types[i], exprs[i]))) {
+      }
+    }
+    while (OB_SUCC(ret) && brs_.size_ < max_row_cnt) {
+      guard.set_batch_idx(brs_.size_);
+      for (int64_t i = 0; OB_SUCC(ret) && i < col_cnt; ++i) {
+        if (OB_FAIL(exprs[i]->locate_datum_for_write(eval_ctx_).from_storage_datum(
+                row->storage_datums_[i], types[i]))) {
+        }
+      }
+      if (OB_SUCC(ret)) {
+        ++brs_.size_;
+        if (brs_.size_ == max_row_cnt) {
+          break;
+        } else if (OB_FAIL(fts_index_.get_next_row(row))) {
+          if (OB_ITER_END == ret) {
+            // Do not fetch another document here: segment() reuses the arena
+            // backing these datums. The next call may safely reuse it.
+            ret = OB_SUCCESS;
+          }
+          break;
+        }
+      }
+    }
+    for (int64_t i = 0; OB_SUCC(ret) && i < col_cnt; ++i) {
+      exprs[i]->get_evaluated_flags(eval_ctx_).set_all(brs_.size_);
+      exprs[i]->get_eval_info(eval_ctx_).evaluated_ = true;
+      exprs[i]->get_eval_info(eval_ctx_).projected_ = true;
+    }
+    brs_.all_rows_active_ = true;
   }
   return ret;
 }

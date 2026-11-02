@@ -387,7 +387,27 @@ struct ObDatumStrCmp : public ObDefined<SupportedCollection<CS_TYPE>::defined_>
 {
   inline static int cmp(const ObDatum &l, const ObDatum &r, int &cmp_ret)
   {
+    // The collation is known here and both arguments are non-NULL datums.
+    // Identical byte strings have identical weights for every collation.
+    if (l.len_ == r.len_ && (l.ptr_ == r.ptr_ || l.len_ == 0
+        || MEMCMP(l.ptr_, r.ptr_, l.len_) == 0)) {
+      cmp_ret = 0;
+      return OB_SUCCESS;
+    }
     return ObDatumStrCmpImpl::cmp(l, r, cmp_ret, CS_TYPE, WITH_END_SPACE);
+  }
+};
+
+template <bool WITH_END_SPACE>
+struct ObDatumStrCmp<CS_TYPE_BINARY, WITH_END_SPACE> : public ObDefined<>
+{
+  inline static int cmp(const ObDatum &l, const ObDatum &r, int &cmp_ret)
+  {
+    // binary is NO PAD: trailing spaces and zero bytes are significant.
+    const int64_t len = min(l.len_, r.len_);
+    const int cmp = len == 0 ? 0 : MEMCMP(l.ptr_, r.ptr_, len);
+    cmp_ret = cmp > 0 ? 1 : cmp < 0 ? -1 : (l.len_ > r.len_) - (l.len_ < r.len_);
+    return OB_SUCCESS;
   }
 };
 

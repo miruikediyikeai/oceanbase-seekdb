@@ -1,0 +1,11 @@
+# Total Lost Samples: 0
+# Samples: 12K of event 'cpu-clock:u'
+    19.46%     0.00%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObSortOpImpl::sort
+    19.46%     0.00%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObSortOpImpl::sort_inmem_data
+    18.52%     2.82%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObSortOpImpl::Compare::operator()
+    12.07%     0.49%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObTableScanOp::inner_get_next_fts_index_batch
+    10.29%     6.63%  PX_G0            seekdb.round3verified  [.] oceanbase::common::ObNullSafeDatumStrCmp<(oceanbase::common::ObCollationType)45, false, true>::cmp
+     6.79%     0.02%  PX_G0            seekdb.round3verified  [.] oceanbase::storage::ObFTParseHelper::segment
+     6.73%     0.09%  PX_G0            seekdb.round3verified  [.] oceanbase::storage::ObFTParseHelper::segment
+     3.22%     0.44%  PX_G0            seekdb.round3verified  [.] oceanbase::common::ObCharset::strcmpsp
+     2.23%     2.23%  PX_G0            seekdb.round3verified  [.] oceanbase::common::ObNullSafeDatumStrCmp<(oceanbase::common::ObCollationType)63, false, true>::cmp

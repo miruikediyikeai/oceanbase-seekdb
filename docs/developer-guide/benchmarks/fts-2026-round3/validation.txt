@@ -1,0 +1,24 @@
+FINAL INCREMENTAL BUILD PASS
+BINARY SHA256 9070103486318f9be18818e9951b586152f38b826bc467da38323cb40db23f3b
+PASS 1668 result sets fb3ebedb7872bf65b93fd738bf0f99b4a0b630c1eef0946fd7053836395a6bf8
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round3verified
+server 7863
+PASS 1668 result sets fb3ebedb7872bf65b93fd738bf0f99b4a0b630c1eef0946fd7053836395a6bf8
+fts_build_batch_regression PASS
+fts_batch_merge_regression PASS
+fts_hotpath_regression PASS
+tokenize_function PASS
+simple_query PASS
+parser_properties PASS
+domain_id_merge_with_compare_null PASS
+create_table_with_fts_index PASS
+create_fts_index_afterward PASS
+FAILED: []
+SORT AREA BEFORE ()
+PASS 0 0 20000
+PASS 0 1 20000
+PASS 0 2 80
+PASS 0 3 20000
+PASS 0 4 111
+PASS ALL 1572c1ae4609e2d6f4ce7047748043d9a302892b4394faa7ca4371b80c9c18d4
+ROUND3 VALIDATION COMPLETE

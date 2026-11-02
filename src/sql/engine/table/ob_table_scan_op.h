@@ -703,6 +703,7 @@ private:
 
   int inner_get_next_fts_index_row();
   int fetch_next_fts_index_rows();
+  int inner_get_next_fts_index_batch(const int64_t max_row_cnt);
   int fill_generated_fts_cols(blocksstable::ObDatumRow *row);
   int get_output_fts_col_expr_by_type(const ObExprOperatorType &type, ObExpr *&expr);
   bool is_resume_point_saved();
