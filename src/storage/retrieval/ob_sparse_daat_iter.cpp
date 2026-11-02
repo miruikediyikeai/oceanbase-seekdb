@@ -17,27 +17,12 @@
 #define USING_LOG_PREFIX STORAGE
 
 #include "ob_sparse_daat_iter.h"
+#include "ob_sparse_retrieval_util.h"
 
 namespace oceanbase
 {
 namespace storage
 {
-
-namespace
-{
-int compare_binary_retrieval_ids(const ObDatum &l, const ObDatum &r, int &cmp_ret,
-                                const ObDatumAccessContext *)
-{
-  if (l.is_null() || r.is_null()) {
-    cmp_ret = l.is_null() ? (r.is_null() ? 0 : -1) : 1;
-  } else {
-    const int64_t common_len = MIN(l.len_, r.len_);
-    const int cmp = common_len == 0 ? 0 : MEMCMP(l.ptr_, r.ptr_, common_len);
-    cmp_ret = cmp != 0 ? (cmp < 0 ? -1 : 1) : (l.len_ > r.len_) - (l.len_ < r.len_);
-  }
-  return OB_SUCCESS;
-}
-}
 
 ObSRMergeCmp::ObSRMergeCmp()
   : cmp_func_(nullptr),
@@ -444,7 +429,11 @@ int ObSRDaaTIterImpl::project_results(const int64_t count)
       guard.set_batch_idx(i);
       ObDatum &id_proj_datum = id_proj_expr->locate_datum_for_write(*eval_ctx);
       set_datum_func_(id_proj_datum, buffered_domain_ids_[i]);
-      id_evaluated_flags.set(i);
+    }
+    // Every row in this dense output batch was written above. Mark the
+    // expression once and set the contiguous flags a word at a time.
+    id_evaluated_flags.set_all(count);
+    if (count > 0) {
       id_proj_expr->set_evaluated_projected(*eval_ctx);
     }
     if (iter_param_->need_project_relevance()) {
@@ -453,7 +442,9 @@ int ObSRDaaTIterImpl::project_results(const int64_t count)
         guard.set_batch_idx(i);
         ObDatum &relevance_proj_datum = relevance_proj_expr->locate_datum_for_write(*eval_ctx);
         relevance_proj_datum.set_double(buffered_relevances_[i]);
-        relevance_evaluated_flags.set(i);
+      }
+      relevance_evaluated_flags.set_all(count);
+      if (count > 0) {
         relevance_proj_expr->set_evaluated_projected(*eval_ctx);
       }
     }

@@ -34,6 +34,9 @@ int ObTextDaaTIter::init(const ObTextDaaTParam &param)
   } else {
     mode_flag_ = param.mode_flag_;
     function_lookup_mode_ = param.function_lookup_mode_;
+    for (int64_t i = 0; i < iter_domain_ids_.count(); ++i) {
+      iter_domain_ids_[i] = nullptr;
+    }
   }
   return ret;
 }
@@ -63,6 +66,105 @@ void ObTextDaaTIter::reuse(const bool switch_tablet)
     }
   }
   ObSRDaaTIterImpl::reuse(switch_tablet);
+  for (int64_t i = 0; i < iter_domain_ids_.count(); ++i) {
+    iter_domain_ids_[i] = nullptr;
+  }
+}
+
+int ObTextDaaTIter::get_next_rows(const int64_t capacity, int64_t &count)
+{
+  // A small natural-language union needs only the current posting of each
+  // term. Merge them directly, keeping the simple merger's ID/term-index
+  // ordering, without pushing and popping an item for every posting.
+  const int64_t dim_count = nullptr == dim_iters_ ? 0 : dim_iters_->count();
+  if (mode_flag_ != sql::ObMatchAgainstMode::NATURAL_LANGUAGE_MODE
+      || dim_count == 0 || dim_count > ObSRSimpleMerger::USE_SIMPLE_MERGER_MAX_TABLE_CNT) {
+    return ObSRDaaTIterImpl::get_next_rows(capacity, count);
+  }
+  int ret = OB_SUCCESS;
+  count = 0;
+  if (IS_NOT_INIT) {
+    ret = OB_NOT_INIT;
+  } else if (capacity == 0) {
+    // No rows requested.
+  } else if (iter_param_->limit_param_->is_valid()
+      && output_row_cnt_ >= iter_param_->limit_param_->limit_) {
+    ret = OB_ITER_END;
+  } else if (OB_FAIL(pre_process())) {
+  } else {
+    ObISRDaaTDimIter *dims[ObSRSimpleMerger::USE_SIMPLE_MERGER_MAX_TABLE_CNT];
+    for (int64_t i = 0; OB_SUCC(ret) && i < dim_count; ++i) {
+      if (OB_ISNULL(dims[i] = dim_iters_->at(i))) {
+        ret = OB_ERR_UNEXPECTED;
+      }
+    }
+    const int64_t real_capacity = MIN(capacity, iter_param_->max_batch_size_);
+    while (OB_SUCC(ret) && count < real_capacity) {
+      for (int64_t i = 0; OB_SUCC(ret) && i < next_round_cnt_; ++i) {
+        const int64_t idx = next_round_iter_idxes_[i];
+        if (OB_FAIL(dims[idx]->get_next_row())) {
+          if (OB_ITER_END == ret) {
+            iter_domain_ids_[idx] = nullptr;
+            ret = OB_SUCCESS;
+          }
+        } else if (OB_FAIL(dims[idx]->get_curr_id(iter_domain_ids_[idx]))) {
+        } else if (OB_ISNULL(iter_domain_ids_[idx])) {
+          ret = OB_ERR_UNEXPECTED;
+        }
+      }
+      next_round_cnt_ = 0;
+      ObSRMergeItem minimum;
+      uint64_t minimum_dims = 0;
+      for (int64_t i = 0; OB_SUCC(ret) && i < dim_count; ++i) {
+        ObSRMergeItem candidate;
+        candidate.iter_idx_ = i;
+        int64_t cmp = 0;
+        if (nullptr == iter_domain_ids_[i]) {
+        } else if (minimum.iter_idx_ < 0) {
+          minimum.iter_idx_ = i;
+          minimum_dims = 1ULL << i;
+        } else if (OB_FAIL(merge_cmp_.cmp(candidate, minimum, cmp))) {
+        } else if (cmp < 0) {
+          minimum.iter_idx_ = i;
+          minimum_dims = 1ULL << i;
+        } else if (cmp == 0) {
+          minimum_dims |= 1ULL << i;
+        }
+      }
+      if (OB_SUCC(ret) && minimum.iter_idx_ < 0) {
+        ret = OB_ITER_END;
+      }
+      for (int64_t i = 0; OB_SUCC(ret) && i < dim_count; ++i) {
+        double score = 0.0;
+        if ((minimum_dims & (1ULL << i)) != 0) {
+          if (OB_FAIL(dims[i]->get_curr_score(score))) {
+          } else {
+            if (nullptr != iter_param_->dim_weights_) {
+              score = score * iter_param_->field_boost_ * iter_param_->dim_weights_->at(i);
+            }
+            if (OB_FAIL(relevance_collector_->collect_one_dim(i, score))) {
+            } else {
+              next_round_iter_idxes_[next_round_cnt_++] = i;
+            }
+          }
+        }
+      }
+      double relevance = 0.0;
+      bool need_project = false;
+      if (OB_FAIL(ret)) {
+      } else if (OB_FAIL(relevance_collector_->get_result(relevance, need_project))) {
+      } else if (need_project && OB_FAIL(filter_on_demand(count, relevance, need_project))) {
+      } else if (need_project && OB_FAIL(cache_result(count, *iter_domain_ids_[minimum.iter_idx_], relevance))) {
+      }
+    }
+    if ((OB_SUCC(ret) || OB_ITER_END == ret) && count > 0) {
+      const int project_ret = project_results(count);
+      if (OB_SUCCESS != project_ret) {
+        ret = project_ret;
+      }
+    }
+  }
+  return ret;
 }
 
 int ObTextDaaTIter::pre_process()

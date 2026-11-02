@@ -125,7 +125,20 @@ int ObGenDicLoader::get_dic_loader(const ObString &parser_name,
     ret = OB_INVALID_ARGUMENT;
   } else if (OB_FAIL(dic_loader_key.init(parser_name, charset))) {
   } else {
+    // Existing loaders are immutable map entries. Keep the shared lock until
+    // the handle owns a reference; only a missing entry needs the write lock.
+    {
+      TCRLockGuard guard(lock_);
+      ret = dic_loader_map_.get_refactored(dic_loader_key, dic_loader);
+      if (OB_SUCCESS == ret) {
+        return loader_handle.set_loader(dic_loader);
+      }
+    }
+    if (OB_HASH_NOT_EXIST != ret) {
+      return OB_ERR_UNEXPECTED;
+    }
     TCWLockGuard guard(lock_);
+    // Another caller may have inserted this loader while we changed locks.
     if (OB_FAIL(dic_loader_map_.get_refactored(dic_loader_key, dic_loader))) {
       if (OB_HASH_NOT_EXIST == ret) {
         if (OB_FAIL(gen_dic_loader(dic_loader_key, dic_loader))) {

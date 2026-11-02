@@ -1,0 +1,181 @@
+DROP DATABASE IF EXISTS fts_batch_merge_regression;
+CREATE DATABASE fts_batch_merge_regression;
+USE fts_batch_merge_regression;
+SET NAMES utf8mb4;
+SET ob_query_timeout=1000000000;
+CREATE TABLE digits(n INT PRIMARY KEY);
+INSERT INTO digits VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
+CREATE TABLE docs(id INT PRIMARY KEY, body TEXT, FULLTEXT INDEX ft(body) WITH PARSER beng);
+INSERT INTO docs
+SELECT id, CASE WHEN id%17=0 THEN NULL WHEN id%13=0 THEN '' ELSE CONCAT(
+IF(id%2=0,'alpha alpha ','beta '), IF(id%3=0,'gamma ','delta '),
+IF(id%5=0,'epsilon ','omega '), 'database performance') END
+FROM (SELECT a.n+10*b.n+100*c.n+1000*d.n AS id FROM digits a,digits b,digits c,digits d) s
+WHERE id<1025;
+SELECT COUNT(*), SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha'),10)))) FROM docs WHERE MATCH(body) AGAINST('alpha');
+COUNT(*)	SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha'),10))))
+445	936695859986
+SELECT COUNT(*), SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta'),10)))) FROM docs WHERE MATCH(body) AGAINST('alpha beta');
+COUNT(*)	SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta'),10))))
+890	1875886105927
+SELECT COUNT(*), SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta gamma'),10)))) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+COUNT(*)	SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta gamma'),10))))
+890	1883185066166
+SELECT COUNT(*), SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta gamma delta epsilon'),10)))) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma delta epsilon');
+COUNT(*)	SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta gamma delta epsilon'),10))))
+890	1850869827517
+SELECT id, ROUND(MATCH(body) AGAINST('alpha beta gamma'),10) AS score FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma') ORDER BY id LIMIT 12 OFFSET 255;
+id	score
+294	1.4865472346
+295	0.3327563539
+296	0.4100870558
+297	1.4645773419
+298	0.4100870558
+300	1.4865472346
+301	0.3327563539
+302	0.4100870558
+303	1.4645773419
+304	0.4100870558
+305	0.3327563539
+307	0.3327563539
+SELECT id, ROUND(MATCH(body) AGAINST('alpha alpha beta'),10) AS score FROM docs WHERE MATCH(body) AGAINST('alpha alpha beta') ORDER BY score DESC,id LIMIT 12 OFFSET 257;
+id	score
+592	0.4100870558
+594	0.4100870558
+596	0.4100870558
+600	0.4100870558
+602	0.4100870558
+604	0.4100870558
+606	0.4100870558
+608	0.4100870558
+610	0.4100870558
+614	0.4100870558
+616	0.4100870558
+618	0.4100870558
+SELECT id FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma')>1 AND id%7=0 ORDER BY id LIMIT 12;
+id
+21
+42
+63
+84
+105
+126
+147
+168
+189
+210
+231
+252
+SELECT COUNT(*) FROM docs WHERE MATCH(body) AGAINST('alpha nonexistentzz');
+COUNT(*)
+445
+SELECT COUNT(*) FROM docs WHERE MATCH(body) AGAINST('nonexistentzz');
+COUNT(*)
+0
+SELECT COUNT(*) FROM docs WHERE MATCH(body) AGAINST('');
+COUNT(*)
+0
+SELECT COUNT(*) FROM docs WHERE MATCH(body) AGAINST('+alpha -gamma' IN BOOLEAN MODE);
+COUNT(*)
+298
+SELECT id, (SELECT ROUND(MATCH(d.body) AGAINST('alpha beta gamma'),10) FROM docs d WHERE d.id=docs.id) AS score FROM docs WHERE id<10 ORDER BY id;
+id	score
+0	0.0000000000
+1	0.3327563539
+2	0.4100870558
+3	1.4645773419
+4	0.4100870558
+5	0.3327563539
+6	1.4865472346
+7	0.3327563539
+8	0.4100870558
+9	1.4645773419
+START TRANSACTION;
+UPDATE docs SET body='alpha beta gamma' WHERE id%19=0;
+DELETE FROM docs WHERE id%23=0;
+SELECT COUNT(*), SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta gamma'),10)))) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+COUNT(*)	SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta gamma'),10))))
+858	1835627347816
+ROLLBACK;
+SELECT COUNT(*), SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta gamma'),10)))) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+COUNT(*)	SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta gamma'),10))))
+890	1883185066166
+CREATE TABLE texts(id INT PRIMARY KEY, text_value VARCHAR(4096));
+INSERT INTO texts VALUES (1,'alpha beta alpha'),(2,'café cafe café'),(3,''),(4,NULL),
+(5,'中国人民银行 全文搜索'),(6,'alpha'),(7,REPEAT('alpha ',200)),(8,'中国 中国 搜索');
+SELECT id, TOKENIZE(text_value,'beng','[{"output":"all"}]') AS tokens FROM texts ORDER BY id;
+id	tokens
+1	{"tokens": [{"alpha": 2}, {"beta": 1}], "doc_len": 3}
+2	{"tokens": [{"café": 3}], "doc_len": 3}
+3	{"tokens": [], "doc_len": 0}
+4	{"tokens": [], "doc_len": 0}
+5	{"tokens": [{"中国人民银行": 1}, {"全文搜索": 1}], "doc_len": 2}
+6	{"tokens": [{"alpha": 1}], "doc_len": 1}
+7	{"tokens": [{"alpha": 200}], "doc_len": 200}
+8	{"tokens": [{"中国": 2}, {"搜索": 1}], "doc_len": 3}
+SELECT id, TOKENIZE(text_value,'ik','[{"output":"all"}]') AS tokens FROM texts ORDER BY id;
+id	tokens
+1	{"tokens": [{"alpha": 2}, {"beta": 1}], "doc_len": 3}
+2	{"tokens": [{"cafe": 1}, {"caf": 2}], "doc_len": 3}
+3	{"tokens": [], "doc_len": 0}
+4	{"tokens": [], "doc_len": 0}
+5	{"tokens": [{"中国人民银行": 1}, {"搜索": 1}, {"全文": 1}], "doc_len": 3}
+6	{"tokens": [{"alpha": 1}], "doc_len": 1}
+7	{"tokens": [{"alpha": 200}], "doc_len": 200}
+8	{"tokens": [{"中国": 2}, {"搜索": 1}], "doc_len": 3}
+SELECT TOKENIZE('café cafe café','space','[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"café": 3}], "doc_len": 3}
+SELECT TOKENIZE('alpha','beng','[{"output":"invalid"}]');
+ERROR HY000: Incorrect arguments to output mode should be string default or all
+SELECT TOKENIZE('beta beta alpha','beng','[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"alpha": 1}, {"beta": 2}], "doc_len": 3}
+SELECT TOKENIZE(TOKENIZE('alpha beta','beng'),'beng') AS nested_tokens;
+nested_tokens
+[]
+CREATE TABLE configs(id INT PRIMARY KEY, parser_name VARCHAR(32), config VARCHAR(1024));
+INSERT INTO configs VALUES
+(1,'beng','[{"output":"all"},{"additional_args":[{"min_token_size":5}]}]'),
+(2,'space','[{"output":"all"},{"additional_args":[{"min_token_size":2}]}]'),
+(3,'ngram','[{"output":"all"},{"additional_args":[{"ngram_token_size":3}]}]'),
+(4,'ik','[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]'),
+(5,'beng','[{"output":"all"},{"additional_args":[{"min_token_size":5}]}]'),
+(6,'ik','[{"output":"all"},{"additional_args":[{"ik_mode":"smart"}]}]');
+SELECT id,TOKENIZE('alpha beta 中国人民银行',parser_name,config) AS tokens FROM configs ORDER BY id;
+id	tokens
+1	{"tokens": [{"中国人民银行": 1}, {"alpha": 1}], "doc_len": 2}
+2	{"tokens": [{"中国人民银行": 1}, {"alpha": 1}, {"beta": 1}], "doc_len": 3}
+3	{"tokens": [{"lph": 1}, {"人民银": 1}, {"bet": 1}, {"国人民": 1}, {"alp": 1}, {"中国人": 1}, {"eta": 1}, {"pha": 1}, {"民银行": 1}], "doc_len": 9}
+4	{"tokens": [{"银行": 1}, {"中国": 1}, {"人民银行": 1}, {"中国人民银行": 1}, {"alpha": 1}, {"中国人": 1}, {"中国人民": 1}, {"国人": 1}, {"人民": 1}, {"beta": 1}], "doc_len": 10}
+5	{"tokens": [{"中国人民银行": 1}, {"alpha": 1}], "doc_len": 2}
+6	{"tokens": [{"中国人民银行": 1}, {"alpha": 1}, {"beta": 1}], "doc_len": 3}
+SELECT id,TOKENIZE('alpha beta 中国人民银行',parser_name,config) AS tokens FROM configs ORDER BY id DESC;
+id	tokens
+6	{"tokens": [{"中国人民银行": 1}, {"alpha": 1}, {"beta": 1}], "doc_len": 3}
+5	{"tokens": [{"中国人民银行": 1}, {"alpha": 1}], "doc_len": 2}
+4	{"tokens": [{"银行": 1}, {"中国": 1}, {"人民银行": 1}, {"中国人民银行": 1}, {"alpha": 1}, {"中国人": 1}, {"中国人民": 1}, {"国人": 1}, {"人民": 1}, {"beta": 1}], "doc_len": 10}
+3	{"tokens": [{"lph": 1}, {"人民银": 1}, {"bet": 1}, {"国人民": 1}, {"alp": 1}, {"中国人": 1}, {"eta": 1}, {"pha": 1}, {"民银行": 1}], "doc_len": 9}
+2	{"tokens": [{"中国人民银行": 1}, {"alpha": 1}, {"beta": 1}], "doc_len": 3}
+1	{"tokens": [{"中国人民银行": 1}, {"alpha": 1}], "doc_len": 2}
+SELECT TOKENIZE('alpha beta','beng','[{"additional_args":[{"min_token_size":1000}]}]');
+ERROR HY000: Incorrect arguments to the min_token_size must be in [1, 16]
+SELECT TOKENIZE('alpha beta','beng','[{"output":"all"},{"additional_args":[{"min_token_size":5}]}]') AS tokens;
+tokens
+{"tokens": [{"alpha": 1}], "doc_len": 1}
+SELECT TOKENIZE(CONVERT(UNHEX('e4b8ad616263') USING utf8mb4),'ik','[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"中": 1}, {"abc": 1}], "doc_len": 2}
+SELECT TOKENIZE(CONVERT(UNHEX('f48fbfbf616263') USING utf8mb4),'ik','[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"abc": 1}], "doc_len": 1}
+SELECT TOKENIZE(CONVERT(UNHEX('eda080616263') USING utf8mb4),'ik','[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [{"abc": 1}], "doc_len": 1}
+SELECT TOKENIZE(CONVERT(UNHEX('e4b8') USING utf8mb4),'ik','[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [], "doc_len": 0}
+SELECT TOKENIZE(CONVERT(UNHEX('c0af616263') USING utf8mb4),'ik','[{"output":"all"}]') AS tokens;
+tokens
+{"tokens": [], "doc_len": 0}
+DROP DATABASE fts_batch_merge_regression;

@@ -39,6 +39,65 @@ namespace oceanbase
 {
 namespace sql
 {
+namespace
+{
+struct TokenizeWordMapCache
+{
+  storage::ObFTWordMap words_;
+  int64_t requested_buckets_ = 0;
+  bool in_use_ = false;
+};
+
+class TokenizeWordMapGuard
+{
+public:
+  TokenizeWordMapGuard()
+  {
+    static thread_local TokenizeWordMapCache cache;
+    if (!cache.in_use_) {
+      cache_ = &cache;
+      cache_->in_use_ = true;
+    }
+  }
+  ~TokenizeWordMapGuard()
+  {
+    if (nullptr != cache_) {
+      // Clear keys while the invocation's allocator is still alive. Only
+      // buckets and one node block survive; no document or result is cached.
+      if (cache_->words_.created()) {
+        cache_->words_.reuse();
+      }
+      cache_->in_use_ = false;
+    }
+  }
+  storage::ObFTWordMap &words() { return nullptr == cache_ ? local_ : cache_->words_; }
+  int init(int64_t buckets)
+  {
+    int ret = OB_SUCCESS;
+    if (nullptr == cache_) {
+      ret = local_.create(buckets, ObMemAttr("FTWordMap"));
+    } else if (!cache_->words_.created() || buckets != cache_->requested_buckets_) {
+      if (cache_->words_.created()) {
+        cache_->words_.destroy();
+      }
+      if (OB_SUCC(ret = cache_->words_.create(buckets, ObMemAttr("FTWordMap")))) {
+        ret = cache_->words_.get_local_allocer().reserve(
+            common::hash::NodeNumTraits<storage::FTWordMapNode>::NODE_NUM);
+        if (OB_SUCC(ret)) {
+          cache_->requested_buckets_ = buckets;
+        } else {
+          cache_->words_.destroy();
+        }
+      }
+    }
+    return ret;
+  }
+private:
+  TokenizeWordMapCache *cache_ = nullptr;
+  storage::ObFTWordMap local_;
+};
+}
+
 ObExprTokenize::ObExprTokenize(common::ObIAllocator &alloc)
     : ObStringExprOperator(alloc,
                            T_FUN_TOKENIZE,
@@ -84,14 +143,13 @@ int ObExprTokenize::tokenize_fulltext(const TokenizeParam &param,
   storage::ObFTParseHelper tokenize_helper;
   const int64_t ft_word_bkt_cnt = MIN(MAX(param.fulltext_.length() / 2, 2), 997);
   int64_t doc_len = 0;
-  storage::ObFTWordMap token_map;
-
-  ObArenaAllocator tmp_parse_alloc(ObMemAttr("Tmp buffer"));
+  TokenizeWordMapGuard word_map_guard;
+  storage::ObFTWordMap &token_map = word_map_guard.words();
 
   if (TokenizeParam::OUTPUT_MODE::DEFAULT != mode && TokenizeParam::OUTPUT_MODE::ALL != mode) {
     ret = OB_INVALID_ARGUMENT;
   } else if (OB_FAIL(tokenize_helper.init(&allocator, param.parser_name_, param.properties_))) {
-  } else if (OB_FAIL(token_map.create(ft_word_bkt_cnt, common::ObMemAttr("FTWordMap")))) {
+  } else if (OB_FAIL(word_map_guard.init(ft_word_bkt_cnt))) {
   } else if (
       (0 != param.fulltext_.length())
       && OB_FAIL(tokenize_helper.segment(
@@ -374,7 +432,35 @@ int ObExprTokenize::parse_parser_properties(const ObExpr &expr,
 
 int ObExprTokenize::TokenizeParam::reform_parser_properties(const ObString &properties)
 {
+  // Cache only the validated parser configuration, never text or tokens.
+  // Exact byte keys include the parser version. Bounded thread-local storage
+  // avoids repeated JSON parsing/formatting for consecutive equal configs.
+  struct ParserConfigCache
+  {
+    char parser_[storage::OB_FT_PARSER_NAME_LENGTH];
+    char input_[1024];
+    char formatted_[2048];
+    int64_t parser_len_ = 0;
+    int64_t input_len_ = 0;
+    int64_t formatted_len_ = 0;
+    bool valid_ = false;
+  };
+  static thread_local ParserConfigCache cache;
   int ret = OB_SUCCESS;
+  const ObString input_properties = properties;
+  const bool cacheable = parser_name_.length() <= sizeof(cache.parser_)
+      && properties.length() <= sizeof(cache.input_);
+  if (cacheable && cache.valid_ && cache.parser_len_ == parser_name_.length()
+      && cache.input_len_ == properties.length()
+      && MEMCMP(cache.parser_, parser_name_.ptr(), cache.parser_len_) == 0
+      && (cache.input_len_ == 0 || MEMCMP(cache.input_, properties.ptr(), cache.input_len_) == 0)) {
+    ObString copy;
+    if (OB_SUCC(ret = ob_write_string(allocator_,
+            ObString(cache.formatted_len_, cache.formatted_), copy))) {
+      properties_ = copy;
+    }
+    return ret;
+  }
   storage::ObFTParserJsonProps parser_properties;
 
   if (OB_FAIL(parser_properties.init())) {
@@ -384,6 +470,17 @@ int ObExprTokenize::TokenizeParam::reform_parser_properties(const ObString &prop
                                                              ObCollationType::CS_TYPE_UTF8MB4_BIN,
                                                              true))) {
   } else if (OB_FAIL(parser_properties.to_format_json(allocator_, properties_))) {
+  } else if (cacheable && properties_.length() <= sizeof(cache.formatted_)) {
+    cache.valid_ = false;
+    cache.parser_len_ = parser_name_.length();
+    cache.input_len_ = input_properties.length();
+    cache.formatted_len_ = properties_.length();
+    MEMCPY(cache.parser_, parser_name_.ptr(), cache.parser_len_);
+    if (cache.input_len_ > 0) {
+      MEMCPY(cache.input_, input_properties.ptr(), cache.input_len_);
+    }
+    MEMCPY(cache.formatted_, properties_.ptr(), cache.formatted_len_);
+    cache.valid_ = true;
   }
 
   return ret;

@@ -51,6 +51,8 @@ public:
                                  const char *input,
                                  const uint8_t char_len,
                                  CharType &type);
+  static int read_char(ObCollationType coll_type, const char *input,
+                       int64_t available, int64_t &char_len, CharType &type);
 
   static int check_cn_number(ObCollationType coll_type,
                              const char *input,
@@ -74,6 +76,9 @@ public:
                                   bool &ignore);
 
 private:
+  template <ObCharsetType CS_TYPE>
+  static void classify_unicode(ob_wc_t unicode, CharType &type);
+
   template <ObCharsetType CS_TYPE>
   static int do_classify(const char *input, const uint8_t char_len, CharType &type);
 
@@ -450,7 +455,17 @@ inline int ObFTCharUtil::do_classify(const char *input, const uint8_t char_len, 
 
   // Decode once: all predicates below classify the same code point.
   if (OB_FAIL(decode_unicode<CS_TYPE>(input, char_len, unicode))) {
-  } else if (ObUnicodeBlockUtils::is_alpha(unicode)) {
+  } else {
+    classify_unicode<CS_TYPE>(unicode, type);
+  }
+  return ret;
+}
+
+template <ObCharsetType CS_TYPE>
+inline void ObFTCharUtil::classify_unicode(ob_wc_t unicode, CharType &type)
+{
+  type = CharType::USELESS;
+  if (ObUnicodeBlockUtils::is_alpha(unicode)) {
     type = CharType::ENGLISH_LETTER;
   } else if (ObUnicodeBlockUtils::is_arabic(unicode)) {
     type = CharType::ARABIC_LETTER;
@@ -464,6 +479,31 @@ inline int ObFTCharUtil::do_classify(const char *input, const uint8_t char_len, 
   } else if ((CS_TYPE == CHARSET_UTF16 || CS_TYPE == CHARSET_UTF16LE)
              && ObUnicodeBlockUtils::check_low_surrogate(unicode)) {
     type = CharType::SURROGATE_LOW;
+  }
+}
+
+inline int ObFTCharUtil::read_char(ObCollationType coll_type, const char *input,
+                                   int64_t available, int64_t &char_len, CharType &type)
+{
+  int ret = OB_SUCCESS;
+  if (nullptr != input && available > 0
+      && CHARSET_UTF8MB4 == ObCharset::charset_type_by_coll(coll_type)) {
+    ob_wc_t unicode = 0;
+    const unsigned char *start = reinterpret_cast<const unsigned char *>(input);
+    const int decoded = common::ob_charset_decode_unicode<CHARSET_UTF8MB4>(start, start + available, unicode);
+    if (decoded <= 0) {
+      // The legacy well-formedness check accepts some surrogate encodings
+      // that the Unicode decoder rejects. Preserve that path's exact result
+      // and error codes for exceptional input.
+      if (OB_FAIL(ObCharset::first_valid_char(coll_type, input, available, char_len))) {
+      } else if (OB_FAIL(classify_first_char(coll_type, input, char_len, type))) {
+      }
+    } else {
+      char_len = decoded;
+      classify_unicode<CHARSET_UTF8MB4>(unicode, type);
+    }
+  } else if (OB_FAIL(ObCharset::first_valid_char(coll_type, input, available, char_len))) {
+  } else if (OB_FAIL(classify_first_char(coll_type, input, char_len, type))) {
   }
   return ret;
 }

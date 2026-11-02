@@ -25,6 +25,19 @@ namespace oceanbase
 namespace storage
 {
 
+inline int compare_binary_retrieval_ids(const ObDatum &l, const ObDatum &r, int &cmp_ret,
+                                       const ObDatumAccessContext *)
+{
+  if (l.is_null() || r.is_null()) {
+    cmp_ret = l.is_null() ? (r.is_null() ? 0 : -1) : 1;
+  } else {
+    const int64_t common_len = MIN(l.len_, r.len_);
+    const int cmp = common_len == 0 ? 0 : MEMCMP(l.ptr_, r.ptr_, common_len);
+    cmp_ret = cmp != 0 ? (cmp < 0 ? -1 : 1) : (l.len_ > r.len_) - (l.len_ < r.len_);
+  }
+  return OB_SUCCESS;
+}
+
 class ObDomainIdCmp
 {
 public:
@@ -51,7 +64,8 @@ int ObDomainIdCmp::init(const ObObjMeta &obj_meta)
       ret = OB_ERR_UNEXPECTED;
       STORAGE_LOG(WARN,"failed to get basic functions", K(ret), K(obj_meta));
     } else {
-      cmp_func_ = id_basic_funcs->null_first_cmp_;
+      cmp_func_ = obj_meta.get_type() == ObVarcharType && obj_meta.get_collation_type() == CS_TYPE_BINARY
+          ? compare_binary_retrieval_ids : id_basic_funcs->null_first_cmp_;
     }
   }
   return ret;

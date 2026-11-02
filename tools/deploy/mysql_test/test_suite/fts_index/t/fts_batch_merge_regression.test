@@ -1,0 +1,69 @@
+# Short natural-language unions, batch boundaries and reusable token maps.
+--disable_warnings
+DROP DATABASE IF EXISTS fts_batch_merge_regression;
+--enable_warnings
+CREATE DATABASE fts_batch_merge_regression;
+USE fts_batch_merge_regression;
+SET NAMES utf8mb4;
+SET ob_query_timeout=1000000000;
+CREATE TABLE digits(n INT PRIMARY KEY);
+INSERT INTO digits VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
+CREATE TABLE docs(id INT PRIMARY KEY, body TEXT, FULLTEXT INDEX ft(body) WITH PARSER beng);
+INSERT INTO docs
+SELECT id, CASE WHEN id%17=0 THEN NULL WHEN id%13=0 THEN '' ELSE CONCAT(
+  IF(id%2=0,'alpha alpha ','beta '), IF(id%3=0,'gamma ','delta '),
+  IF(id%5=0,'epsilon ','omega '), 'database performance') END
+FROM (SELECT a.n+10*b.n+100*c.n+1000*d.n AS id FROM digits a,digits b,digits c,digits d) s
+WHERE id<1025;
+
+SELECT COUNT(*), SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha'),10)))) FROM docs WHERE MATCH(body) AGAINST('alpha');
+SELECT COUNT(*), SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta'),10)))) FROM docs WHERE MATCH(body) AGAINST('alpha beta');
+SELECT COUNT(*), SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta gamma'),10)))) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+SELECT COUNT(*), SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta gamma delta epsilon'),10)))) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma delta epsilon');
+SELECT id, ROUND(MATCH(body) AGAINST('alpha beta gamma'),10) AS score FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma') ORDER BY id LIMIT 12 OFFSET 255;
+SELECT id, ROUND(MATCH(body) AGAINST('alpha alpha beta'),10) AS score FROM docs WHERE MATCH(body) AGAINST('alpha alpha beta') ORDER BY score DESC,id LIMIT 12 OFFSET 257;
+SELECT id FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma')>1 AND id%7=0 ORDER BY id LIMIT 12;
+SELECT COUNT(*) FROM docs WHERE MATCH(body) AGAINST('alpha nonexistentzz');
+SELECT COUNT(*) FROM docs WHERE MATCH(body) AGAINST('nonexistentzz');
+SELECT COUNT(*) FROM docs WHERE MATCH(body) AGAINST('');
+SELECT COUNT(*) FROM docs WHERE MATCH(body) AGAINST('+alpha -gamma' IN BOOLEAN MODE);
+SELECT id, (SELECT ROUND(MATCH(d.body) AGAINST('alpha beta gamma'),10) FROM docs d WHERE d.id=docs.id) AS score FROM docs WHERE id<10 ORDER BY id;
+START TRANSACTION;
+UPDATE docs SET body='alpha beta gamma' WHERE id%19=0;
+DELETE FROM docs WHERE id%23=0;
+SELECT COUNT(*), SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta gamma'),10)))) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+ROLLBACK;
+SELECT COUNT(*), SUM(CRC32(CONCAT(id,':',ROUND(MATCH(body) AGAINST('alpha beta gamma'),10)))) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+
+CREATE TABLE texts(id INT PRIMARY KEY, text_value VARCHAR(4096));
+INSERT INTO texts VALUES (1,'alpha beta alpha'),(2,'café cafe café'),(3,''),(4,NULL),
+ (5,'中国人民银行 全文搜索'),(6,'alpha'),(7,REPEAT('alpha ',200)),(8,'中国 中国 搜索');
+SELECT id, TOKENIZE(text_value,'beng','[{"output":"all"}]') AS tokens FROM texts ORDER BY id;
+SELECT id, TOKENIZE(text_value,'ik','[{"output":"all"}]') AS tokens FROM texts ORDER BY id;
+SELECT TOKENIZE('café cafe café','space','[{"output":"all"}]') AS tokens;
+--error 1210
+SELECT TOKENIZE('alpha','beng','[{"output":"invalid"}]');
+SELECT TOKENIZE('beta beta alpha','beng','[{"output":"all"}]') AS tokens;
+SELECT TOKENIZE(TOKENIZE('alpha beta','beng'),'beng') AS nested_tokens;
+CREATE TABLE configs(id INT PRIMARY KEY, parser_name VARCHAR(32), config VARCHAR(1024));
+INSERT INTO configs VALUES
+ (1,'beng','[{"output":"all"},{"additional_args":[{"min_token_size":5}]}]'),
+ (2,'space','[{"output":"all"},{"additional_args":[{"min_token_size":2}]}]'),
+ (3,'ngram','[{"output":"all"},{"additional_args":[{"ngram_token_size":3}]}]'),
+ (4,'ik','[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]'),
+ (5,'beng','[{"output":"all"},{"additional_args":[{"min_token_size":5}]}]'),
+ (6,'ik','[{"output":"all"},{"additional_args":[{"ik_mode":"smart"}]}]');
+SELECT id,TOKENIZE('alpha beta 中国人民银行',parser_name,config) AS tokens FROM configs ORDER BY id;
+SELECT id,TOKENIZE('alpha beta 中国人民银行',parser_name,config) AS tokens FROM configs ORDER BY id DESC;
+--error 1210
+SELECT TOKENIZE('alpha beta','beng','[{"additional_args":[{"min_token_size":1000}]}]');
+SELECT TOKENIZE('alpha beta','beng','[{"output":"all"},{"additional_args":[{"min_token_size":5}]}]') AS tokens;
+# UTF8 boundaries and malformed sequences retain the SQL conversion semantics.
+--disable_warnings
+SELECT TOKENIZE(CONVERT(UNHEX('e4b8ad616263') USING utf8mb4),'ik','[{"output":"all"}]') AS tokens;
+SELECT TOKENIZE(CONVERT(UNHEX('f48fbfbf616263') USING utf8mb4),'ik','[{"output":"all"}]') AS tokens;
+SELECT TOKENIZE(CONVERT(UNHEX('eda080616263') USING utf8mb4),'ik','[{"output":"all"}]') AS tokens;
+SELECT TOKENIZE(CONVERT(UNHEX('e4b8') USING utf8mb4),'ik','[{"output":"all"}]') AS tokens;
+SELECT TOKENIZE(CONVERT(UNHEX('c0af616263') USING utf8mb4),'ik','[{"output":"all"}]') AS tokens;
+--enable_warnings
+DROP DATABASE fts_batch_merge_regression;

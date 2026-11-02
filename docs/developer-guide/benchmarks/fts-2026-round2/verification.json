@@ -1,0 +1,24 @@
+{
+  "base_commit": "a5e1782d46210d085385e715c985a46bb64367f0",
+  "before_binary_sha256": "dd755db242174c07f514ec3171657fe756b186a984928cba00e59c254c2dbc92",
+  "initial_candidate_binary_sha256": "5bfa848fde7ea4bf1458387e8f1d281e4f86331b9b9fe690c4d0a434f1f4e36a",
+  "final_binary_sha256": "2fcf57492f4d275f5f02015c94cc5885407d8a004c531d77c3a635c4a549667b",
+  "source_files_sha256": {
+    "src/data_plane/api/data_plane/fts/ob_fts_struct.h": "1bb2aee4af62eba3754b623b3c1d941b93afbef7cc0da2580696b7fb164daa74",
+    "src/observer/composition/retrieval/ob_das_legacy_tr_merge_iter.cpp": "476eff31bed4f4377f8e833d542d65f7307cae37fbd58df127770a7a9d2b69ef",
+    "src/share/text_analysis/ob_token_stream.cpp": "c390bc67762a9db31410f1e6485d05679d562b03f64cf02a1aa3e601238a78cf",
+    "src/sql/das/iter/ob_das_text_retrieval_merge_iter.cpp": "f7e452cb4c20a044b6d00a0547213919b7523b8d152b1f4d18858a724913bf5d",
+    "src/sql/engine/expr/ob_expr_tokenize.cpp": "ae983c57fdeac2774bc67499b1b45155ea953c2d8185bafd77d243afaa84931c",
+    "src/sql/optimizer/ob_join_order.cpp": "6f9b14b2d65943fe70564cad070489add216c87cc4e47049a8351a556a53e1dc",
+    "src/storage/fts/dict/ob_gen_dic_loader.cpp": "66ad87b9798cdff80f6503549213f8de3c4b815bc16814572e354ed446c19d71",
+    "src/storage/fts/ik/ob_ik_arbitrator.cpp": "9b57dc2ff77414b0ac200d46dcd8f7fd9a39c5fe3e9e7699aef00f3205cc2760",
+    "src/storage/fts/ik/ob_ik_char_util.h": "220d399edf9b59da78c7cb89d6c24f19641566f9150a77827e623079b0c13b98",
+    "src/storage/fts/ik/ob_ik_processor.cpp": "b15f078f054b11904b61fb1ff88a2d7bccb4602d0d5e9431cbc704fda5c221e3",
+    "src/storage/retrieval/ob_sparse_daat_iter.cpp": "9a3de82fdbad3c1bf5147721939f74be644e3f61a03ed6934df9867ff5fd6131",
+    "src/storage/retrieval/ob_sparse_retrieval_util.h": "0a7ea24c6b6f75e34af3d56a1ecb73237e429b9e9d6f49f7ddb08f079fb6dc2e",
+    "src/storage/retrieval/ob_text_daat_iter.cpp": "ea238ccc810bf42d19130c1599b0c8cb989989ebb041f15e70cb29dd2bd3034f",
+    "src/storage/retrieval/ob_text_daat_iter.h": "db072a6b81dfa7d8af2400ba368b07d8a69988f51cfb690be76bf78f7aaf87c1"
+  },
+  "primary_comparison": "final/comparison.json",
+  "note": "The initial candidate excludes dictionary-loader shared lookup and validated parser-configuration reuse. All measured runs are retained. CPU probes are diagnostics only; they use different loop counts and do not contribute to performance scoring."
+}
