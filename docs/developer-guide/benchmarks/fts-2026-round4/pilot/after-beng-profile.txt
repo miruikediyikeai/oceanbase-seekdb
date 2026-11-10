@@ -1,0 +1,29 @@
+# Total Lost Samples: 0
+# Samples: 1K of event 'cpu-clock:u'
+     8.20%  ReqWorker        seekdb.round4     [.] oceanbase::storage::ObTextDaaTIter::get_next_rows
+     6.99%  ReqWorker        seekdb.round4     [.] oceanbase::blocksstable::ObStringDiffDecoder::batch_decode
+     6.11%  ReqWorker        libc.so.6         [.] __memmove_avx_unaligned_erms
+     5.56%  ReqWorker        libc.so.6         [.] __memcmp_avx2_movbe
+     3.96%  ReqWorker        seekdb.round4     [.] oceanbase::blocksstable::ObIntegerBaseDiffDecoder::batch_get_bitpacked_values
+     3.96%  ReqWorker        seekdb.round4     [.] oceanbase::storage::ObSRDaaTIterImpl::filter_on_demand
+     3.41%  ReqWorker        seekdb.round4     [.] oceanbase::sql::ObExprBM25::eval_batch_bm25_relevance_expr
+     3.03%  ReqWorker        seekdb.round4     [.] oceanbase::storage::compare_binary_retrieval_ids
+     2.31%  ReqWorker        seekdb.round4     [.] oceanbase::sql::ObBitVectorImpl<unsigned long>::at
+     2.31%  ReqWorker        seekdb.round4     [.] oceanbase::storage::ObSRMergeCmp::get_id_datum
+     2.26%  python3          python3.10        [.] _PyEval_EvalFrameDefault
+     2.09%  ReqWorker        seekdb.round4     [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::save_relevances_and_docids
+     2.04%  ReqWorker        seekdb.round4     [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::get_curr_id
+     1.93%  ReqWorker        seekdb.round4     [.] oceanbase::storage::ObSRDaaTIterImpl::project_results
+     1.76%  ReqWorker        seekdb.round4     [.] oceanbase::sql::ObDocIdExt::from_datum
+     1.76%  ReqWorker        seekdb.round4     [.] 0x000000000726e360
+     1.16%  ReqWorker        seekdb.round4     [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::get_next_row
+     1.10%  ReqWorker        seekdb.round4     [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::get_curr_score
+     1.05%  ReqWorker        seekdb.round4     [.] oceanbase::sql::ObExpr::do_eval_batch
+     0.94%  ReqWorker        seekdb.round4     [.] oceanbase::storage::ObSRDaaTInnerProductRelevanceCollector::collect_one_dim
+     0.88%  ReqWorker        seekdb.round4     [.] oceanbase::sql::ObBitVectorImpl<unsigned long>::set
+     0.77%  ReqWorker        seekdb.round4     [.] oceanbase::storage::ObBlockBatchedRowStore::get_row_ids
+     0.66%  ReqWorker        seekdb.round4     [.] oceanbase::storage::ObSRDaaTInnerProductRelevanceCollector::get_result
+     0.61%  ReqWorker        seekdb.round4     [.] oceanbase::sql::(anonymous namespace)::set_doc_id_shallow
+     0.61%  ReqWorker        seekdb.round4     [.] oceanbase::sql::ObBitVectorImpl<unsigned long>::unset
+     0.55%  ReqWorker        seekdb.round4     [.] oceanbase::blocksstable::batch_load_data_to_datum
+     0.55%  ReqWorker        seekdb.round4     [.] oceanbase::sql::ObAggregateProcessor::process_aggr_batch_result<oceanbase::sql::ObAggregateProcessor::ObBatchRowsSlice>

@@ -48,7 +48,8 @@ struct ObSRMergeCmp
 private:
   inline const ObDatum &get_id_datum(const int64_t iter_idx)
   {
-    const ObDatum *datum = iter_ids_->at(iter_idx);
+    OB_ASSERT(iter_idx >= 0 && iter_idx < iter_ids_->count());
+    const ObDatum *datum = iter_ids_->get_data()[iter_idx];
     OB_ASSERT(nullptr != datum);
     return *datum;
   }
@@ -106,6 +107,7 @@ protected:
   ObFixedArray<int64_t, ObIAllocator> next_round_iter_idxes_;
   int64_t next_round_cnt_;
   void (*set_datum_func_)(ObDatum &, const ObDocIdExt &);
+  bool simple_relevance_filter_;
 private:
   DISALLOW_COPY_AND_ASSIGN(ObSRDaaTIterImpl);
 };

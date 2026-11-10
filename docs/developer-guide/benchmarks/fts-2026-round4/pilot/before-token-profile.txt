@@ -1,0 +1,16 @@
+# Total Lost Samples: 0
+# Samples: 2K of event 'cpu-clock:u'
+    13.72%  python3         python3.10             [.] _PyEval_EvalFrameDefault
+     2.52%  ReqWorker       seekdb.round3verified  [.] oceanbase::storage::ObFTDATReader<void>::match_with_hit
+     2.15%  ReqWorker       seekdb.round3verified  [.] oceanbase::storage::ObArrayHashMap::find
+     2.05%  python3         python3.10             [.] _PyObject_GetMethod
+     1.17%  python3         python3.10             [.] _PyFunction_Vectorcall
+     1.03%  python3         python3.10             [.] _PyObject_GenericGetAttrWithDict
+     0.98%  python3         python3.10             [.] _PyObject_GenericSetAttrWithDict
+     0.79%  ReqWorker       libc.so.6              [.] __strlen_avx2
+     0.65%  ReqWorker       libc.so.6              [.] __memcmp_avx2_movbe
+     0.61%  python3         python3.10             [.] _PyObject_MakeTpCall
+     0.56%  ReqWorker       seekdb.round3verified  [.] oceanbase::observer::ObMPQuery::process_single_stmt
+     0.56%  python3         python3.10             [.] PyObject_SetAttr
+     0.51%  ReqWorker       libc.so.6              [.] printf_positional
+     0.51%  ReqWorker       seekdb.round3verified  [.] oceanbase::common::ObArenaAllocator::alloc

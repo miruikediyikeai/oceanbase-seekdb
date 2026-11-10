@@ -126,17 +126,39 @@ int ObExprBM25::eval_batch_bm25_relevance_expr(const ObExpr &expr, ObEvalCtx &ct
     const double avg_doc_token_cnt = avg_doc_token_cnt_datum.at(0)->get_double();
     ObDatum *res_datum = expr.locate_batch_datums(ctx);
     ObBitVector &eval_flags = expr.get_evaluated_flags(ctx);
-    for (int64_t i = 0; OB_SUCC(ret) && i < size; ++i) {
-      if (OB_UNLIKELY(doc_length_datum.at(i)->is_null() || related_token_cnt_datum.at(i)->is_null())) {
-        ret = OB_ERR_UNEXPECTED;
-      } else if (!skip.contain(i) && !eval_flags.at(i)) {
-        const int64_t related_token_cnt = related_token_cnt_datum.at(i)->get_uint();
-        const uint64_t doc_token_cnt = doc_length_datum.at(i)->get_uint();
-        const double norm_len = doc_token_cnt / avg_doc_token_cnt;
-        const double doc_weight = doc_token_weight(related_token_cnt, norm_len);
-        const double relevance = token_weight * doc_weight;
-        res_datum[i].set_double(relevance);
-        eval_flags.set(i);
+    if (skip.is_all_false(size) && eval_flags.is_all_false(size)) {
+      // Dense posting batches have no skipped or already evaluated lanes.
+      // Keep the same arithmetic and NULL checks, and mark the written prefix
+      // once instead of reading and updating bit vectors for every posting.
+      int64_t written = 0;
+      while (OB_SUCC(ret) && written < size) {
+        const ObDatum &length = *doc_length_datum.at(written);
+        const ObDatum &frequency = *related_token_cnt_datum.at(written);
+        if (OB_UNLIKELY(length.is_null() || frequency.is_null())) {
+          ret = OB_ERR_UNEXPECTED;
+        } else {
+          const int64_t related_token_cnt = frequency.get_uint();
+          const uint64_t doc_token_cnt = length.get_uint();
+          const double norm_len = doc_token_cnt / avg_doc_token_cnt;
+          const double doc_weight = doc_token_weight(related_token_cnt, norm_len);
+          const double relevance = token_weight * doc_weight;
+          res_datum[written++].set_double(relevance);
+        }
+      }
+      eval_flags.set_all(written);
+    } else {
+      for (int64_t i = 0; OB_SUCC(ret) && i < size; ++i) {
+        if (OB_UNLIKELY(doc_length_datum.at(i)->is_null() || related_token_cnt_datum.at(i)->is_null())) {
+          ret = OB_ERR_UNEXPECTED;
+        } else if (!skip.contain(i) && !eval_flags.at(i)) {
+          const int64_t related_token_cnt = related_token_cnt_datum.at(i)->get_uint();
+          const uint64_t doc_token_cnt = doc_length_datum.at(i)->get_uint();
+          const double norm_len = doc_token_cnt / avg_doc_token_cnt;
+          const double doc_weight = doc_token_weight(related_token_cnt, norm_len);
+          const double relevance = token_weight * doc_weight;
+          res_datum[i].set_double(relevance);
+          eval_flags.set(i);
+        }
       }
     }
   }

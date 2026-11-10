@@ -1,0 +1,49 @@
+# Compare score truth conversion with the scalar expression, and retain
+# threshold/boolean predicates, output scores, LIMIT and batch boundaries.
+--disable_warnings
+DROP DATABASE IF EXISTS fts_score_filter_regression;
+--enable_warnings
+CREATE DATABASE fts_score_filter_regression;
+USE fts_score_filter_regression;
+SET NAMES utf8mb4;
+SET ob_query_timeout=1000000000;
+CREATE TABLE digits(n INT PRIMARY KEY);
+INSERT INTO digits VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
+CREATE TABLE docs(id INT PRIMARY KEY,body TEXT,FULLTEXT INDEX ft(body) WITH PARSER beng);
+INSERT INTO docs
+SELECT n,CASE WHEN n%29=0 THEN NULL WHEN n%31=0 THEN '' ELSE CONCAT(
+ 'common database ',IF(n%2=0,'alpha alpha ','beta '),
+ IF(n%3=0,'gamma ','delta '),IF(n%5=0,'epsilon ','omega '),
+ IF(n%7=0,'theta ','lambda '),IF(n%11=0,'sigma ','zeta ')) END
+FROM (SELECT a.n+10*b.n+100*c.n AS n FROM digits a,digits b,digits c) s WHERE n<777;
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('common');
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma delta epsilon omega theta lambda sigma zeta');
+SELECT id,ROUND(MATCH(body) AGAINST('alpha beta gamma'),10) AS score FROM docs
+ WHERE MATCH(body) AGAINST('alpha beta gamma') ORDER BY id LIMIT 10 OFFSET 253;
+SELECT id,ROUND(MATCH(body) AGAINST('alpha beta gamma'),10) AS score FROM docs
+ WHERE MATCH(body) AGAINST('alpha beta gamma') ORDER BY score DESC,id LIMIT 10 OFFSET 255;
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma')>0.1;
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma') BETWEEN 0.01 AND 0.2;
+SELECT COUNT(*),SUM(id) FROM docs WHERE NOT MATCH(body) AGAINST('alpha');
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('alpha') OR id%17=0;
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('+alpha -gamma' IN BOOLEAN MODE);
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('nonexistentzz');
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('');
+SELECT id,MATCH(body) AGAINST('alpha beta gamma')<>0 AS truth FROM docs WHERE id<12 ORDER BY id;
+SELECT COUNT(*) FROM (SELECT id FROM docs WHERE MATCH(body) AGAINST('common') LIMIT 0)t;
+SELECT COUNT(*),SUM(id) FROM (SELECT id FROM docs WHERE MATCH(body) AGAINST('common') ORDER BY id LIMIT 13 OFFSET 257)t;
+PREPARE stmt FROM 'SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST(?)';
+SET @words='alpha beta';
+EXECUTE stmt USING @words;
+SET @words='gamma';
+EXECUTE stmt USING @words;
+SET @words='nonexistentzz';
+EXECUTE stmt USING @words;
+DEALLOCATE PREPARE stmt;
+# First-character ranges, missing characters and repeated parser reuse.
+SELECT TOKENIZE('阿尔卑斯 冰川 上海 中国 南京 杭州 深圳 重庆 香港 黑龙江 龟甲 龘 😀','ik','[{"output":"all"}]');
+SELECT TOKENIZE('南京市长江大桥 中国人民银行 上海自来水来自海上','ik','[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]');
+SELECT TOKENIZE('alpha 123.45 三百二十公里 한국어 カタカナ','ik','[{"output":"all"}]');
+SELECT TOKENIZE('阿尔卑斯 冰川 上海 中国 南京 杭州 深圳 重庆 香港 黑龙江 龟甲 龘 😀','ik','[{"output":"all"}]');
+DROP DATABASE fts_score_filter_regression;

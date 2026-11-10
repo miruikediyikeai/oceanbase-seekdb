@@ -1,0 +1,31 @@
+# Total Lost Samples: 0
+# Samples: 2K of event 'cpu-clock:u'
+     6.97%  ReqWorker      seekdb.round3verified  [.] oceanbase::common::ObIArrayWrap<oceanbase::common::hash::ObHashSet<unsigned long, oceanbase::common::hash::NoPthreadDefendMode, oceanbase::common::hash::hash_func<unsigned long>, oceanbase::common::hash::equal_to<unsigned long>, oceanbase::common::hash::SimpleAllocer<oceanbase::common::hash::ObHashTableNode<oceanbase::common::hash::HashMapPair<unsigned long, oceanbase::common::hash::HashNullObj> >, 108, oceanbase::common::hash::SpinMutexDefendMode, oceanbase::common::hash::DefaultSimpleAllocerAllocator>, oceanbase::common::hash::NormalPointer, oceanbase::common::ObMalloc, 1l>*>::at
+     5.63%  ReqWorker      seekdb.round3verified  [.] oceanbase::blocksstable::ObStringDiffDecoder::batch_decode
+     4.17%  ReqWorker      seekdb.round3verified  [.] oceanbase::storage::ObSRDaaTIterImpl::filter_on_demand
+     3.98%  ReqWorker      libc.so.6              [.] __memmove_avx_unaligned_erms
+     3.60%  ReqWorker      seekdb.round3verified  [.] oceanbase::sql::calc_bool_expr_for_double_type
+     3.48%  ReqWorker      seekdb.round3verified  [.] oceanbase::storage::ObTextDaaTIter::get_next_rows
+     3.25%  ReqWorker      seekdb.round3verified  [.] oceanbase::sql::ObBitVectorImpl<unsigned long>::at
+     3.06%  ReqWorker      seekdb.round3verified  [.] oceanbase::sql::ObExprBM25::eval_batch_bm25_relevance_expr
+     2.37%  ReqWorker      seekdb.round3verified  [.] oceanbase::sql::ObBitVectorImpl<unsigned long>::set
+     2.33%  ReqWorker      libc.so.6              [.] __memcmp_avx2_movbe
+     2.18%  ReqWorker      seekdb.round3verified  [.] oceanbase::storage::ObSRDaaTIterImpl::project_results
+     2.07%  python3        python3.10             [.] _PyEval_EvalFrameDefault
+     1.88%  ReqWorker      seekdb.round3verified  [.] oceanbase::sql::ObExpr::eval_one_datum_of_batch
+     1.80%  ReqWorker      seekdb.round3verified  [.] oceanbase::sql::ObDocIdExt::from_datum
+     1.65%  ReqWorker      seekdb.round3verified  [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::save_relevances_and_docids
+     1.65%  ReqWorker      seekdb.round3verified  [.] 0x000000000726e360
+     1.57%  ReqWorker      seekdb.round3verified  [.] oceanbase::blocksstable::ObIntegerBaseDiffDecoder::batch_get_bitpacked_values
+     1.53%  ReqWorker      seekdb.round3verified  [.] oceanbase::common::ObIArrayWrap<int (*)(oceanbase::common::ObDatum const&, oceanbase::common::ObDatum const&, int&, oceanbase::common::ObDatumAccessContext const*)>::at
+     1.53%  ReqWorker      seekdb.round3verified  [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::get_next_row
+     1.26%  ReqWorker      seekdb.round3verified  [.] oceanbase::common::ObIArrayWrap<oceanbase::data_plane::ObSparseRetrievalId>::at
+     1.11%  ReqWorker      seekdb.round3verified  [.] oceanbase::storage::ObBlockBatchedRowStore::get_row_ids
+     1.07%  ReqWorker      seekdb.round3verified  [.] oceanbase::storage::compare_binary_retrieval_ids
+     0.96%  ReqWorker      seekdb.round3verified  [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::get_curr_id
+     0.88%  ReqWorker      seekdb.round3verified  [.] oceanbase::storage::ObSRDaaTIterImpl::cache_result
+     0.88%  ReqWorker      seekdb.round3verified  [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::get_curr_score
+     0.84%  ReqWorker      seekdb.round3verified  [.] oceanbase::common::ObIArrayWrap<oceanbase::data_plane::ObSparseRetrievalId>::at
+     0.80%  ReqWorker      seekdb.round3verified  [.] oceanbase::storage::ObSRMergeCmp::get_id_datum
+     0.61%  ReqWorker      seekdb.round3verified  [.] oceanbase::sql::ObExpr::do_eval_batch
+     0.57%  ReqWorker      seekdb.round3verified  [.] oceanbase::sql::ObBitVectorImpl<unsigned long>::unset

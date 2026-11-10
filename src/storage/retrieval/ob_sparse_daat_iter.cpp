@@ -86,7 +86,8 @@ ObSRDaaTIterImpl::ObSRDaaTIterImpl()
     buffered_relevances_(),
     next_round_iter_idxes_(),
     next_round_cnt_(0),
-    set_datum_func_(nullptr)
+    set_datum_func_(nullptr),
+    simple_relevance_filter_(false)
 {
 }
 
@@ -106,6 +107,10 @@ int ObSRDaaTIterImpl::init(
     iter_param_ = &iter_param;
     dim_iters_ = &dim_iters;
     relevance_collector_ = &relevance_collector;
+    const ObExpr *filter = iter_param.filter_expr_;
+    simple_relevance_filter_ = filter != nullptr && filter->type_ == T_OP_BOOL
+        && filter->arg_cnt_ == 1 && filter->args_[0] == iter_param.relevance_proj_expr_
+        && filter->args_[0] != nullptr && filter->args_[0]->datum_meta_.type_ == ObDoubleType;
     const int64_t max_batch_size = OB_MAX(iter_param_->eval_ctx_->max_batch_size_, iter_param_->max_batch_size_);
     if (iter_param_->id_proj_expr_->datum_meta_.type_ == common::ObUInt64Type) {
       set_datum_func_ = ObISparseRetrievalMergeIter::set_datum_int;
@@ -362,6 +367,19 @@ int ObSRDaaTIterImpl::filter_on_demand(const int64_t count, const double relevan
   ObExpr *filter_expr = iter_param_->filter_expr_;
   ObExpr *relevance_proj_expr = iter_param_->relevance_proj_expr_;
   ObEvalCtx *eval_ctx = iter_param_->eval_ctx_;
+  if (simple_relevance_filter_ && eval_ctx->is_vectorized()) {
+    if (OB_UNLIKELY(count >= eval_ctx->max_batch_size_)) {
+      return OB_ERR_UNEXPECTED;
+    }
+    // BOOL(double) needs only this already computed score. cache_result()
+    // retains it and project_results() writes the final output batch, so
+    // there is no need to project a provisional score for every candidate.
+    // Invalidate the computed filter, rather than marking it projected: a
+    // later consumer can evaluate it normally from the final score batch.
+    filter_expr->get_eval_info(*eval_ctx).clear_evaluated_flag();
+    need_project = relevance != 0.0;
+    return OB_SUCCESS;
+  }
   ObEvalCtx::BatchInfoScopeGuard guard(*eval_ctx);
 
   if (eval_ctx->is_vectorized()) {
@@ -404,8 +422,8 @@ int ObSRDaaTIterImpl::cache_result(int64_t &count, const ObDatum &id_datum, cons
   } else if (OB_UNLIKELY(count >= buffered_domain_ids_.count() || count >= buffered_relevances_.count())) {
     ret = OB_INVALID_ARGUMENT;
   } else {
-    buffered_domain_ids_[count].from_datum(id_datum);
-    buffered_relevances_[count] = relevance;
+    buffered_domain_ids_.get_data()[count].from_datum(id_datum);
+    buffered_relevances_.get_data()[count] = relevance;
     ++count;
     ++output_row_cnt_;
     if (limit_param->is_valid() && output_row_cnt_ >= limit) {
@@ -428,7 +446,7 @@ int ObSRDaaTIterImpl::project_results(const int64_t count)
     for (int64_t i = 0; i < count; ++i) {
       guard.set_batch_idx(i);
       ObDatum &id_proj_datum = id_proj_expr->locate_datum_for_write(*eval_ctx);
-      set_datum_func_(id_proj_datum, buffered_domain_ids_[i]);
+      set_datum_func_(id_proj_datum, buffered_domain_ids_.get_data()[i]);
     }
     // Every row in this dense output batch was written above. Mark the
     // expression once and set the contiguous flags a word at a time.
@@ -441,7 +459,7 @@ int ObSRDaaTIterImpl::project_results(const int64_t count)
       for (int64_t i = 0; i < count; ++i) {
         guard.set_batch_idx(i);
         ObDatum &relevance_proj_datum = relevance_proj_expr->locate_datum_for_write(*eval_ctx);
-        relevance_proj_datum.set_double(buffered_relevances_[i]);
+        relevance_proj_datum.set_double(buffered_relevances_.get_data()[i]);
       }
       relevance_evaluated_flags.set_all(count);
       if (count > 0) {

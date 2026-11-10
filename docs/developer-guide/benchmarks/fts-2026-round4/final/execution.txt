@@ -1,0 +1,29 @@
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round3verified
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+fts-r4-query-before-1 COMPLETE
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round4query
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+fts-r4-query-after-1 COMPLETE
+PASS 1668 result sets fb3ebedb7872bf65b93fd738bf0f99b4a0b630c1eef0946fd7053836395a6bf8
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round4query
+PASS 1668 result sets fb3ebedb7872bf65b93fd738bf0f99b4a0b630c1eef0946fd7053836395a6bf8
+fts-r4-query-after-2 COMPLETE
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round3verified
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+fts-r4-query-before-2 COMPLETE
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round3verified
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+fts-r4-query-before-3 COMPLETE
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round4query
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+fts-r4-query-after-3 COMPLETE
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round3verified
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round4query
+ROUND4 BENCH COMPLETE

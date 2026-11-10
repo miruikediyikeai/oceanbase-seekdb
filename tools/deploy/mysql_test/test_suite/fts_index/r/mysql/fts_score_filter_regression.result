@@ -1,0 +1,117 @@
+DROP DATABASE IF EXISTS fts_score_filter_regression;
+CREATE DATABASE fts_score_filter_regression;
+USE fts_score_filter_regression;
+SET NAMES utf8mb4;
+SET ob_query_timeout=1000000000;
+CREATE TABLE digits(n INT PRIMARY KEY);
+INSERT INTO digits VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
+CREATE TABLE docs(id INT PRIMARY KEY,body TEXT,FULLTEXT INDEX ft(body) WITH PARSER beng);
+INSERT INTO docs
+SELECT n,CASE WHEN n%29=0 THEN NULL WHEN n%31=0 THEN '' ELSE CONCAT(
+'common database ',IF(n%2=0,'alpha alpha ','beta '),
+IF(n%3=0,'gamma ','delta '),IF(n%5=0,'epsilon ','omega '),
+IF(n%7=0,'theta ','lambda '),IF(n%11=0,'sigma ','zeta ')) END
+FROM (SELECT a.n+10*b.n+100*c.n AS n FROM digits a,digits b,digits c) s WHERE n<777;
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('common');
+COUNT(*)	SUM(id)
+725	281222
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma');
+COUNT(*)	SUM(id)
+725	281222
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma delta epsilon omega theta lambda sigma zeta');
+COUNT(*)	SUM(id)
+725	281222
+SELECT id,ROUND(MATCH(body) AGAINST('alpha beta gamma'),10) AS score FROM docs
+WHERE MATCH(body) AGAINST('alpha beta gamma') ORDER BY id LIMIT 10 OFFSET 253;
+id	score
+271	0.2849740933
+272	0.3642384106
+273	1.1879990647
+274	0.3642384106
+275	0.2849740933
+276	1.2270295962
+277	0.2849740933
+278	0.3642384106
+280	0.3642384106
+281	0.2849740933
+SELECT id,ROUND(MATCH(body) AGAINST('alpha beta gamma'),10) AS score FROM docs
+WHERE MATCH(body) AGAINST('alpha beta gamma') ORDER BY score DESC,id LIMIT 10 OFFSET 255;
+id	score
+40	0.3642384106
+44	0.3642384106
+46	0.3642384106
+50	0.3642384106
+52	0.3642384106
+56	0.3642384106
+64	0.3642384106
+68	0.3642384106
+70	0.3642384106
+74	0.3642384106
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma')>0.1;
+COUNT(*)	SUM(id)
+725	281222
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('alpha beta gamma') BETWEEN 0.01 AND 0.2;
+COUNT(*)	SUM(id)
+0	NULL
+SELECT COUNT(*),SUM(id) FROM docs WHERE NOT MATCH(body) AGAINST('alpha');
+COUNT(*)	SUM(id)
+414	160658
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('alpha') OR id%17=0;
+COUNT(*)	SUM(id)
+387	149811
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('+alpha -gamma' IN BOOLEAN MODE);
+COUNT(*)	SUM(id)
+242	94108
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('nonexistentzz');
+COUNT(*)	SUM(id)
+0	NULL
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('');
+COUNT(*)	SUM(id)
+0	NULL
+SELECT id,MATCH(body) AGAINST('alpha beta gamma')<>0 AS truth FROM docs WHERE id<12 ORDER BY id;
+id	truth
+0	0
+1	1
+2	1
+3	1
+4	1
+5	1
+6	1
+7	1
+8	1
+9	1
+10	1
+11	1
+SELECT COUNT(*) FROM (SELECT id FROM docs WHERE MATCH(body) AGAINST('common') LIMIT 0)t;
+COUNT(*)
+0
+SELECT COUNT(*),SUM(id) FROM (SELECT id FROM docs WHERE MATCH(body) AGAINST('common') ORDER BY id LIMIT 13 OFFSET 257)t;
+COUNT(*)	SUM(id)
+13	3662
+PREPARE stmt FROM 'SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST(?)';
+SET @words='alpha beta';
+EXECUTE stmt USING @words;
+COUNT(*)	SUM(id)
+725	281222
+SET @words='gamma';
+EXECUTE stmt USING @words;
+COUNT(*)	SUM(id)
+242	93753
+SET @words='nonexistentzz';
+EXECUTE stmt USING @words;
+COUNT(*)	SUM(id)
+0	NULL
+DEALLOCATE PREPARE stmt;
+SELECT TOKENIZE('阿尔卑斯 冰川 上海 中国 南京 杭州 深圳 重庆 香港 黑龙江 龟甲 龘 😀','ik','[{"output":"all"}]');
+TOKENIZE('阿尔卑斯 冰川 上海 中国 南京 杭州 深圳 重庆 香港 黑龙江 龟甲 龘 😀','ik','[{"output":"all"}]')
+{"tokens": [{"重庆": 1}, {"中国": 1}, {"杭州": 1}, {"黑龙江": 1}, {"阿尔卑斯": 1}, {"冰川": 1}, {"南京": 1}, {"上海": 1}, {"龟甲": 1}, {"深圳": 1}, {"龘": 1}, {"香港": 1}], "doc_len": 12}
+SELECT TOKENIZE('南京市长江大桥 中国人民银行 上海自来水来自海上','ik','[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]');
+TOKENIZE('南京市长江大桥 中国人民银行 上海自来水来自海上','ik','[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]')
+{"tokens": [{"长江大桥": 1}, {"银行": 1}, {"中国": 1}, {"市长": 1}, {"人民银行": 1}, {"来自": 1}, {"中国人民银行": 1}, {"南京市": 1}, {"上海": 1}, {"南京": 1}, {"中国人": 1}, {"中国人民": 1}, {"自来水": 1}, {"海上": 1}, {"自来": 1}, {"长江": 1}, {"水": 1}, {"国人": 1}, {"人民": 1}, {"大桥": 1}], "doc_len": 20}
+SELECT TOKENIZE('alpha 123.45 三百二十公里 한국어 カタカナ','ik','[{"output":"all"}]');
+TOKENIZE('alpha 123.45 三百二十公里 한국어 カタカナ','ik','[{"output":"all"}]')
+{"tokens": [{"公里": 1}, {"三百二十": 1}, {"タ": 1}, {"ナ": 1}, {"국": 1}, {"한": 1}, {"カ": 2}, {"어": 1}, {"alpha": 1}, {"123.45": 1}], "doc_len": 11}
+SELECT TOKENIZE('阿尔卑斯 冰川 上海 中国 南京 杭州 深圳 重庆 香港 黑龙江 龟甲 龘 😀','ik','[{"output":"all"}]');
+TOKENIZE('阿尔卑斯 冰川 上海 中国 南京 杭州 深圳 重庆 香港 黑龙江 龟甲 龘 😀','ik','[{"output":"all"}]')
+{"tokens": [{"重庆": 1}, {"中国": 1}, {"杭州": 1}, {"黑龙江": 1}, {"阿尔卑斯": 1}, {"冰川": 1}, {"南京": 1}, {"上海": 1}, {"龟甲": 1}, {"深圳": 1}, {"龘": 1}, {"香港": 1}], "doc_len": 12}
+DROP DATABASE fts_score_filter_regression;

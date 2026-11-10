@@ -1,0 +1,44 @@
+# Total Lost Samples: 0
+# Samples: 5K of event 'cpu-clock:u'
+     5.71%  PX_G0            seekdb.round3verified  [.] oceanbase::common::ObNullSafeDatumStrCmp<(oceanbase::common::ObCollationType)45, false, true>::cmp
+     4.38%  PX_G0            libc.so.6              [.] __memcmp_avx2_movbe
+     2.36%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObSortOpImpl::Compare::operator()
+     2.23%  PX_G0            seekdb.round3verified  [.] ZSTD_compressBlock_fast
+     2.15%  PX_G0            libc.so.6              [.] __memmove_avx_unaligned_erms
+     1.97%  PX_G0            seekdb.round3verified  [.] oceanbase::common::ObNullSafeDatumStrCmp<(oceanbase::common::ObCollationType)63, false, true>::cmp
+     1.85%  PX_G0            seekdb.round3verified  [.] oceanbase::common::crc64_sse42
+     1.72%  PX_G0            seekdb.round3verified  [.] oceanbase::common::ObCharset::strcmp
+     1.49%  PX_G0            seekdb.round3verified  [.] oceanbase::storage::ObArrayHashMap::find
+     1.44%  PX_G0            seekdb.round3verified  [.] oceanbase::common::ObIArrayWrap<oceanbase::sql::ObOptParamHint::OptParamType>::at
+     1.44%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObCompactBlockWriter::ensure_write
+     1.32%  PX_G0            seekdb.round3verified  [.] oceanbase::common::ObCharset::is_argument_valid
+     1.28%  PX_G0            seekdb.round3verified  [.] oceanbase::storage::ObFTDATReader<void>::match_with_hit
+     1.27%  PX_G0            seekdb.round3verified  [.] ZSTD_decompressSequences_bmi2
+     1.20%  PX_G0            seekdb.round3verified  [.] oceanbase::common::ObIArrayWrap<int (*)(oceanbase::common::ObDatum const&, oceanbase::common::ObDatum const&, int&, oceanbase::common::ObDatumAccessContext const*)>::at
+     1.13%  PX_G0            seekdb.round3verified  [.] ob_mb_wc_utf8mb4
+     1.07%  PX_G0            seekdb.round3verified  [.] oceanbase::storage::ObFTRangeDict::find_first_char_range
+     1.02%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObOperator::get_next_batch
+     0.97%  PX_G0            seekdb.round3verified  [.] oceanbase::common::ObCharset::get_charset
+     0.93%  PX_G0            seekdb.round3verified  [.] ob_strnncoll_mb_bin
+     0.91%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObOperator::get_next_row
+     0.88%  PX_G0            libc.so.6              [.] __memset_avx2_unaligned_erms
+     0.88%  PX_G0            seekdb.round3verified  [.] oceanbase::blocksstable::ObMicroBlockEncoder::copy_cell
+     0.86%  PX_G0            seekdb.round3verified  [.] oceanbase::common::ObIArrayWrap<oceanbase::common::ObAIFuncUtils::normalize_rerank_result(oceanbase::common::ObIAllocator&, oceanbase::common::ObIJsonBase*, long, oceanbase::common::ObJsonArray*&)::RankedDocument>::at
+     0.84%  PX_G0            seekdb.round3verified  [.] ob_strnncollsp_utf8mb4
+     0.69%  PX_G0            seekdb.round3verified  [.] oceanbase::common::ObCharset::get_charset_uninit
+     0.65%  PX_G0            seekdb.round3verified  [.] ZSTD_encodeSequences_bmi2
+     0.65%  PX_G0            seekdb.round3verified  [.] oceanbase::blocksstable::ObStorageDatumBuffer::ObStorageDatumBuffer
+     0.62%  PX_G0            seekdb.round3verified  [.] oceanbase::common::PageArena<char, oceanbase::common::ModulePageAllocator>::_alloc_aligned
+     0.62%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObCompactBlockReader::get_stored_row<unsigned short>
+     0.62%  PX_G0            seekdb.round3verified  [.] oceanbase::storage::ObAddWord::groupby_word
+     0.60%  PX_G0            seekdb.round3verified  [.] oceanbase::blocksstable::ObMicroBlockChecksumHelper::cal_row_checksum<oceanbase::blocksstable::ObStorageDatum>
+     0.60%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObChunkDatumStore::Iterator::attach_rows<false>
+     0.60%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObDASDomainUtils::generate_fulltext_word_rows
+     0.60%  PX_G0            seekdb.round3verified  [.] 0x000000000726e2b0
+     0.58%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObCompactBlockWriter::inner_process_datum<unsigned short>
+     0.56%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObCompactBlockWriter::inner_add_row<unsigned short>
+     0.56%  PX_G0            seekdb.round3verified  [.] oceanbase::storage::ObIKCJKProcessor::do_process
+     0.55%  PX_G0            seekdb.round3verified  [.] oceanbase::blocksstable::ObIntArrayFuncTable::upper_bound<unsigned short>
+     0.55%  PX_G0            seekdb.round3verified  [.] oceanbase::sql::ObBitVectorImpl<unsigned long>::at
+     0.53%  PX_G0            seekdb.round3verified  [.] oceanbase::storage::ObIKFTParser::process_next_batch
+     0.51%  PX_G0            seekdb.round3verified  [.] oceanbase::blocksstable::ObMacroBlockWriter::save_last_key

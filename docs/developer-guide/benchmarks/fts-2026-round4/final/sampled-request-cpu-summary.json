@@ -1,0 +1,49 @@
+{
+  "event": "cpu-clock",
+  "frequency_hz": 999,
+  "comm": "ReqWorker",
+  "sample_order": [
+    "before",
+    "after",
+    "after",
+    "before"
+  ],
+  "means": {
+    "select1": {
+      "before": 0.055755755700000006,
+      "after": 0.06401401395,
+      "improvement": -0.14811490125673243
+    },
+    "token_ik": {
+      "before": 0.21021021,
+      "after": 0.22234734712499998,
+      "improvement": -0.057738095238095116
+    },
+    "token_beng": {
+      "before": 0.119544544425,
+      "after": 0.10545545535,
+      "improvement": 0.11785639522712993
+    },
+    "cn": {
+      "before": 2.008008006,
+      "after": 1.50525525375,
+      "improvement": 0.25037387836490527
+    },
+    "beng": {
+      "before": 3.03728728425,
+      "after": 2.25800800575,
+      "improvement": 0.2565708165114938
+    },
+    "mixed": {
+      "before": 2.9004003975000003,
+      "after": 1.6819319302499998,
+      "improvement": 0.42010353753235563
+    },
+    "limit": {
+      "before": 4.0035034995,
+      "after": 3.3188188155000002,
+      "improvement": 0.17102137767220893
+    }
+  },
+  "note": "Diagnostic sampled CPU periods, not official benchmark or score."
+}

@@ -1,0 +1,21 @@
+# Total Lost Samples: 0
+# Samples: 12K of event 'cpu-clock:u'
+    36.71%  PX_G0            seekdb.round4     [.] oceanbase::common::PageArena<char, oceanbase::common::ModulePageAllocator>::reuse
+     4.46%  PX_G0            seekdb.round4     [.] oceanbase::common::ObNullSafeDatumStrCmp<(oceanbase::common::ObCollationType)45, false, true>::cmp
+     2.30%  PX_G0            libc.so.6         [.] __memcmp_avx2_movbe
+     1.80%  PX_G0            seekdb.round4     [.] oceanbase::storage::ObFTDATReader<void>::match_with_hit
+     1.52%  PX_G0            seekdb.round4     [.] oceanbase::storage::ObArrayHashMap::find
+     1.38%  PX_G0            seekdb.round4     [.] oceanbase::sql::ObSortOpImpl::Compare::operator()
+     1.22%  PX_G0            libc.so.6         [.] __memmove_avx_unaligned_erms
+     1.05%  PX_G0            seekdb.round4     [.] oceanbase::common::ObNullSafeDatumStrCmp<(oceanbase::common::ObCollationType)63, false, true>::cmp
+     1.00%  PX_G0            seekdb.round4     [.] oceanbase::common::crc64_sse42
+     0.99%  PX_G0            seekdb.round4     [.] oceanbase::sql::ObCompactBlockWriter::ensure_write
+     0.93%  PX_G0            seekdb.round4     [.] ZSTD_compressBlock_fast
+     0.85%  PX_G0            seekdb.round4     [.] ZSTD_decompressSequences_bmi2
+     0.79%  PX_G0            seekdb.round4     [.] oceanbase::common::ObIArrayWrap<oceanbase::sql::ObOptParamHint::OptParamType>::at
+     0.71%  PX_G0            seekdb.round4     [.] ob_strnncollsp_utf8mb4
+     0.62%  PX_G0            seekdb.round4     [.] ob_mb_wc_utf8mb4
+     0.62%  PX_G0            seekdb.round4     [.] oceanbase::sql::ObOperator::get_next_batch
+     0.60%  DDLTaskExecutor  seekdb.round4     [.] oceanbase::sql::ObSysVarFactory::create_all_sys_vars_
+     0.57%  PX_G0            seekdb.round4     [.] oceanbase::storage::ObFTRangeDict::find_first_char_range
+     0.53%  PX_G0            seekdb.round4     [.] oceanbase::common::ObIArrayWrap<int (*)(oceanbase::common::ObDatum const&, oceanbase::common::ObDatum const&, int&, oceanbase::common::ObDatumAccessContext const*)>::at

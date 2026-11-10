@@ -508,8 +508,8 @@ int ObTextRetrievalDaaTTokenIter::save_relevances_and_docids()
     const ObDatumVector &doc_id_datum = inv_scan_domain_id_col_->locate_expr_datumvector(*eval_ctx_);
     for (int64_t i = 0; OB_SUCC(ret) && i < count_; ++i) {
       if (OB_LIKELY(!token_iter_->get_skip()->at(i))) {
-        relevance_[i] = relevance_datum.at(i)->get_double();
-        if (OB_FAIL(doc_id_[i].from_datum(*doc_id_datum.at(i)))) {
+        relevance_.get_data()[i] = relevance_datum.at(i)->get_double();
+        if (OB_FAIL(doc_id_.get_data()[i].from_datum(*doc_id_datum.at(i)))) {
         }
       }
     }
@@ -527,7 +527,7 @@ int ObTextRetrievalDaaTTokenIter::save_docids()
     const ObDatumVector &doc_id_datum = inv_scan_domain_id_col_->locate_expr_datumvector(*eval_ctx_);
     for (int64_t i = 0; OB_SUCC(ret) && i < count_; ++i) {
       if (OB_LIKELY(!token_iter_->get_skip()->at(i))) {
-        if (OB_FAIL(doc_id_[i].from_datum(*doc_id_datum.at(i)))) {
+        if (OB_FAIL(doc_id_.get_data()[i].from_datum(*doc_id_datum.at(i)))) {
         };
       }
     }
@@ -552,7 +552,7 @@ int ObTextRetrievalDaaTTokenIter::advance_to(const ObDatum &id_datum)
   while (OB_SUCC(ret) && !find) {
     if (cur_idx_ < count_) {
       if (OB_FAIL(cmp_func_(
-              id_datum, doc_id_[cur_idx_].get_datum(), result, nullptr))) {
+              id_datum, doc_id_.get_data()[cur_idx_].get_datum(), result, nullptr))) {
       } else if (result <= 0) {
         find = true;
       } else {
@@ -567,7 +567,7 @@ int ObTextRetrievalDaaTTokenIter::advance_to(const ObDatum &id_datum)
     } else if (cur_idx_ != 0) {
       ret = OB_ERR_UNEXPECTED;
     } else if (OB_FAIL(cmp_func_(
-                   id_datum, doc_id_[cur_idx_].get_datum(), result, nullptr))) {
+                   id_datum, doc_id_.get_data()[cur_idx_].get_datum(), result, nullptr))) {
     } else if (result <= 0) {
       find = true;
     } else {
@@ -583,7 +583,7 @@ int ObTextRetrievalDaaTTokenIter::get_curr_score(double &score) const
   if (OB_UNLIKELY(cur_idx_ >= count_)) {
     ret = OB_ARRAY_OUT_OF_RANGE;
   } else if (relevance_expr_) {
-    score = relevance_[cur_idx_];
+    score = relevance_.get_data()[cur_idx_];
   }
   return ret;
 }
@@ -594,7 +594,7 @@ int ObTextRetrievalDaaTTokenIter::get_curr_id(const ObDatum *&id_datum) const
   if (OB_UNLIKELY(cur_idx_ >= count_)) {
     ret = OB_ARRAY_OUT_OF_RANGE;
   } else {
-    id_datum = &doc_id_[cur_idx_].get_datum();
+    id_datum = &doc_id_.get_data()[cur_idx_].get_datum();
   }
   return ret;
 }

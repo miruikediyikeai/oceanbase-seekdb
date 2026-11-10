@@ -1,0 +1,59 @@
+{
+  "base_commit": "8e5bca2c9cd138e8f2c6b629f427cd2cf675d50d",
+  "build_command": "make -j3 seekdb",
+  "binary_sha256": "277901ba2709994369b968ba8d5ac4ccdd4f975cafe4e6cc07e178ab479bd714",
+  "source_matches_compilation_directory": {
+    "src/sql/engine/expr/ob_expr_bm25.cpp": "1f0217044e40ad3e9ead37f958a0c2d86020c36e34f93f3b3437d3f74045aed0",
+    "src/storage/retrieval/ob_sparse_daat_iter.cpp": "0e828e4c7951b3e19372eaac26df1ffb786b57cbe76768e89d21bb9f14ca5918",
+    "src/storage/retrieval/ob_sparse_daat_iter.h": "d0dc5cf254a3e94d11efd3f9c00cf93f7310776d28e5e3e207af1ac512138a56",
+    "src/storage/retrieval/ob_text_daat_iter.cpp": "30566d93c6a1bc3b6f509ef08c272036b31e6ec3c935e199167817e2d02e142e",
+    "src/storage/retrieval/ob_text_retrieval_token_iter.cpp": "7280625eab1d6e0d5f720028f23bbcf897f390e1b7b10c22a03c96eaddf70b37",
+    "src/storage/fts/dict/ob_ft_range_dict.cpp": "9e438e3f0dc83e576542fce433e1776a901a9f9d8e328d61940aa49276086f99",
+    "src/storage/fts/dict/ob_ft_range_dict.h": "4fbead4ec4569d834ba9f12ac0852c7324a0fabcbae16435403ccde0bfd24b80",
+    "src/storage/fts/ik/ob_ik_arbitrator.h": "88b2f5f436513e64f783a87e5de48ed5751847b09724dc836d404e429fe51dce",
+    "src/sql/engine/sort/ob_sort_op_impl.cpp": "be077737beed8eef3b132e0fe17a0c741d01f3e07a9a5eef6dc7dae239dd171a"
+  },
+  "modified_sources": [
+    "src/sql/engine/expr/ob_expr_bm25.cpp",
+    "src/storage/retrieval/ob_sparse_daat_iter.cpp",
+    "src/storage/retrieval/ob_sparse_daat_iter.h",
+    "src/storage/retrieval/ob_text_daat_iter.cpp",
+    "src/storage/retrieval/ob_text_retrieval_token_iter.cpp"
+  ],
+  "restored_sources": [
+    "src/storage/fts/dict/ob_ft_range_dict.cpp",
+    "src/storage/fts/dict/ob_ft_range_dict.h",
+    "src/storage/fts/ik/ob_ik_arbitrator.h",
+    "src/sql/engine/sort/ob_sort_op_impl.cpp"
+  ],
+  "mysqltests_passed": [
+    "fts_score_filter_regression",
+    "fts_build_batch_regression",
+    "fts_batch_merge_regression",
+    "fts_hotpath_regression",
+    "tokenize_function",
+    "simple_query",
+    "parser_properties",
+    "domain_id_merge_with_compare_null",
+    "create_table_with_fts_index",
+    "create_fts_index_afterward"
+  ],
+  "result_sets": 1668,
+  "result_sha256": "347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa",
+  "unicode_result_sets": 1062,
+  "unicode_sha256": "26e9f26e63e86867c4fa82e3e584e72222204bffafa122552eea5b034e8476c0",
+  "ordinary_sql_sha256": "1572c1ae4609e2d6f4ce7047748043d9a302892b4394faa7ca4371b80c9c18d4",
+  "concurrency": "8 connections x 200 calls, 25 cases and error recovery",
+  "benchmark_runs": 6,
+  "timesync_restored": true,
+  "official_baseline_available": false,
+  "restored_sources_match_base_commit": true,
+  "benchmark_and_workflow_match_base_commit": true,
+  "request_cpu_sampling": {
+    "event": "cpu-clock",
+    "frequency_hz": 999,
+    "samples_per_version": 2,
+    "all_result_hashes_match": true,
+    "summary_file": "sampled-request-cpu-summary.json"
+  }
+}

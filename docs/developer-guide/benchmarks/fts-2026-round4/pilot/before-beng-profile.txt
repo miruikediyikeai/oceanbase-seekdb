@@ -1,0 +1,33 @@
+# Total Lost Samples: 0
+# Samples: 4K of event 'cpu-clock:u'
+     5.87%  ReqWorker        seekdb.round3verified     [.] oceanbase::common::ObIArrayWrap<oceanbase::common::hash::ObHashSet<unsigned long, oceanbase::common::hash::NoPthreadDefendMode, oceanbase::common::hash::hash_func<unsigned long>, oceanbase::common::hash::equal_to<unsigned long>, oceanbase::common::hash::SimpleAllocer<oceanbase::common::hash::ObHashTableNode<oceanbase::common::hash::HashMapPair<unsigned long, oceanbase::common::hash::HashNullObj> >, 108, oceanbase::common::hash::SpinMutexDefendMode, oceanbase::common::hash::DefaultSimpleAllocerAllocator>, oceanbase::common::hash::NormalPointer, oceanbase::common::ObMalloc, 1l>*>::at
+     4.66%  ReqWorker        seekdb.round3verified     [.] oceanbase::blocksstable::ObStringDiffDecoder::batch_decode
+     4.31%  ReqWorker        seekdb.round3verified     [.] oceanbase::storage::ObTextDaaTIter::get_next_rows
+     3.94%  ReqWorker        seekdb.round3verified     [.] oceanbase::sql::calc_bool_expr_for_double_type
+     3.74%  ReqWorker        libc.so.6                 [.] __memmove_avx_unaligned_erms
+     3.69%  ReqWorker        libc.so.6                 [.] __memcmp_avx2_movbe
+     3.64%  ReqWorker        seekdb.round3verified     [.] oceanbase::storage::ObSRDaaTIterImpl::filter_on_demand
+     3.05%  ReqWorker        seekdb.round3verified     [.] oceanbase::sql::ObBitVectorImpl<unsigned long>::at
+     2.70%  ReqWorker        seekdb.round3verified     [.] oceanbase::blocksstable::ObIntegerBaseDiffDecoder::batch_get_bitpacked_values
+     2.63%  ReqWorker        seekdb.round3verified     [.] oceanbase::sql::ObExprBM25::eval_batch_bm25_relevance_expr
+     2.50%  ReqWorker        seekdb.round3verified     [.] oceanbase::common::ObIArrayWrap<int (*)(oceanbase::common::ObDatum const&, oceanbase::common::ObDatum const&, int&, oceanbase::common::ObDatumAccessContext const*)>::at
+     2.43%  ReqWorker        seekdb.round3verified     [.] oceanbase::sql::ObExpr::eval_one_datum_of_batch
+     2.33%  ReqWorker        seekdb.round3verified     [.] oceanbase::storage::compare_binary_retrieval_ids
+     1.83%  ReqWorker        seekdb.round3verified     [.] oceanbase::sql::ObBitVectorImpl<unsigned long>::set
+     1.76%  ReqWorker        seekdb.round3verified     [.] oceanbase::storage::ObSRDaaTIterImpl::project_results
+     1.59%  ReqWorker        seekdb.round3verified     [.] oceanbase::sql::ObDocIdExt::from_datum
+     1.56%  ReqWorker        seekdb.round3verified     [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::save_relevances_and_docids
+     1.34%  python3          python3.10                [.] _PyEval_EvalFrameDefault
+     1.31%  ReqWorker        seekdb.round3verified     [.] oceanbase::common::ObIArrayWrap<oceanbase::data_plane::ObSparseRetrievalId>::at
+     1.21%  ReqWorker        seekdb.round3verified     [.] oceanbase::storage::ObSRMergeCmp::get_id_datum
+     1.14%  ReqWorker        seekdb.round3verified     [.] oceanbase::storage::ObSRDaaTIterImpl::cache_result
+     1.07%  ReqWorker        seekdb.round3verified     [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::get_next_row
+     1.02%  ReqWorker        seekdb.round3verified     [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::get_curr_score
+     1.02%  ReqWorker        seekdb.round3verified     [.] 0x000000000726e360
+     0.92%  ReqWorker        seekdb.round3verified     [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::get_curr_id
+     0.84%  ReqWorker        seekdb.round3verified     [.] oceanbase::common::ObIArrayWrap<oceanbase::data_plane::ObSparseRetrievalId>::at
+     0.67%  ReqWorker        seekdb.round3verified     [.] oceanbase::storage::ObBlockBatchedRowStore::get_row_ids
+     0.64%  ReqWorker        seekdb.round3verified     [.] oceanbase::sql::ObBitVectorImpl<unsigned long>::unset
+     0.57%  ReqWorker        seekdb.round3verified     [.] oceanbase::storage::ObSRDaaTInnerProductRelevanceCollector::collect_one_dim
+     0.57%  ReqWorker        seekdb.round3verified     [.] oceanbase::storage::ObSRDaaTInnerProductRelevanceCollector::get_result
+     0.52%  python3          python3.10                [.] _PyObject_GetMethod

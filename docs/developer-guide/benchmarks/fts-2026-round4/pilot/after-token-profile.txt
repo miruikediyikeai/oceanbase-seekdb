@@ -1,0 +1,16 @@
+# Total Lost Samples: 0
+# Samples: 2K of event 'cpu-clock:u'
+    12.24%  python3          python3.10        [.] _PyEval_EvalFrameDefault
+     5.73%  TxLoopWorker     libc.so.6         [.] __memset_avx2_unaligned_erms
+     2.27%  python3          python3.10        [.] _PyObject_GetMethod
+     2.23%  ReqWorker        seekdb.round4     [.] oceanbase::storage::ObFTDATReader<void>::match_with_hit
+     1.56%  ReqWorker        seekdb.round4     [.] oceanbase::storage::ObArrayHashMap::find
+     1.08%  TxLoopWorker     libc.so.6         [.] printf_positional
+     0.82%  TxLoopWorker     libc.so.6         [.] __strlen_avx2
+     0.82%  python3          python3.10        [.] _PyObject_GenericGetAttrWithDict
+     0.74%  python3          python3.10        [.] PyObject_SetAttr
+     0.67%  ReqWorker        libc.so.6         [.] __memcmp_avx2_movbe
+     0.63%  python3          python3.10        [.] _PyFunction_Vectorcall
+     0.60%  python3          python3.10        [.] _PyObject_GenericSetAttrWithDict
+     0.56%  ReqWorker        libc.so.6         [.] __memmove_avx_unaligned_erms
+     0.56%  python3          libc.so.6         [.] __GI___ioctl

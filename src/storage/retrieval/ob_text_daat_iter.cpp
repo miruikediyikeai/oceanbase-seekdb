@@ -92,23 +92,29 @@ int ObTextDaaTIter::get_next_rows(const int64_t capacity, int64_t &count)
     ret = OB_ITER_END;
   } else if (OB_FAIL(pre_process())) {
   } else {
-    ObISRDaaTDimIter *dims[ObSRSimpleMerger::USE_SIMPLE_MERGER_MAX_TABLE_CNT];
+    // These fixed buffers cannot grow during a merge batch. Resolve their
+    // storage once instead of checking array indices for every posting.
+    ObISRDaaTDimIter *const *dims = dim_iters_->get_data();
+    const ObDatum **ids = iter_domain_ids_.get_data();
+    int64_t *next_dims = next_round_iter_idxes_.get_data();
+    const double *weights = iter_param_->dim_weights_ == nullptr
+        ? nullptr : iter_param_->dim_weights_->get_data();
     for (int64_t i = 0; OB_SUCC(ret) && i < dim_count; ++i) {
-      if (OB_ISNULL(dims[i] = dim_iters_->at(i))) {
+      if (OB_ISNULL(dims[i])) {
         ret = OB_ERR_UNEXPECTED;
       }
     }
     const int64_t real_capacity = MIN(capacity, iter_param_->max_batch_size_);
     while (OB_SUCC(ret) && count < real_capacity) {
       for (int64_t i = 0; OB_SUCC(ret) && i < next_round_cnt_; ++i) {
-        const int64_t idx = next_round_iter_idxes_[i];
+        const int64_t idx = next_dims[i];
         if (OB_FAIL(dims[idx]->get_next_row())) {
           if (OB_ITER_END == ret) {
-            iter_domain_ids_[idx] = nullptr;
+            ids[idx] = nullptr;
             ret = OB_SUCCESS;
           }
-        } else if (OB_FAIL(dims[idx]->get_curr_id(iter_domain_ids_[idx]))) {
-        } else if (OB_ISNULL(iter_domain_ids_[idx])) {
+        } else if (OB_FAIL(dims[idx]->get_curr_id(ids[idx]))) {
+        } else if (OB_ISNULL(ids[idx])) {
           ret = OB_ERR_UNEXPECTED;
         }
       }
@@ -119,7 +125,7 @@ int ObTextDaaTIter::get_next_rows(const int64_t capacity, int64_t &count)
         ObSRMergeItem candidate;
         candidate.iter_idx_ = i;
         int64_t cmp = 0;
-        if (nullptr == iter_domain_ids_[i]) {
+        if (nullptr == ids[i]) {
         } else if (minimum.iter_idx_ < 0) {
           minimum.iter_idx_ = i;
           minimum_dims = 1ULL << i;
@@ -140,11 +146,11 @@ int ObTextDaaTIter::get_next_rows(const int64_t capacity, int64_t &count)
           if (OB_FAIL(dims[i]->get_curr_score(score))) {
           } else {
             if (nullptr != iter_param_->dim_weights_) {
-              score = score * iter_param_->field_boost_ * iter_param_->dim_weights_->at(i);
+              score = score * iter_param_->field_boost_ * weights[i];
             }
             if (OB_FAIL(relevance_collector_->collect_one_dim(i, score))) {
             } else {
-              next_round_iter_idxes_[next_round_cnt_++] = i;
+              next_dims[next_round_cnt_++] = i;
             }
           }
         }
@@ -154,7 +160,7 @@ int ObTextDaaTIter::get_next_rows(const int64_t capacity, int64_t &count)
       if (OB_FAIL(ret)) {
       } else if (OB_FAIL(relevance_collector_->get_result(relevance, need_project))) {
       } else if (need_project && OB_FAIL(filter_on_demand(count, relevance, need_project))) {
-      } else if (need_project && OB_FAIL(cache_result(count, *iter_domain_ids_[minimum.iter_idx_], relevance))) {
+      } else if (need_project && OB_FAIL(cache_result(count, *ids[minimum.iter_idx_], relevance))) {
       }
     }
     if ((OB_SUCC(ret) || OB_ITER_END == ret) && count > 0) {
