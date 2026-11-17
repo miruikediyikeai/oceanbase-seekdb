@@ -1,0 +1,161 @@
+{
+  "base_commit": "3460b431dfcf601d14588bb9eca296702abc4184",
+  "arithmetic_means": {
+    "before": {
+      "git_dirty": 1.0,
+      "rows": 20000.0,
+      "batch": 500.0,
+      "rounds": 3000.0,
+      "query_rounds": 200.0,
+      "samples": 3.0,
+      "warmup": 30.0,
+      "skip_load": 0.0,
+      "select1_avg_ms": 0.15816666666666668,
+      "select1_stdev_ms": 0.024166666666666666,
+      "raw_load_sec": 0.8076666666666666,
+      "raw_load_rows_per_sec": 33506.933333333334,
+      "build_ik_all_sec": 10.626333333333333,
+      "build_ik_content_sec": 7.686,
+      "build_beng_en_sec": 3.8046666666666664,
+      "build_total_sec": 22.130666666666666,
+      "tokenize_ik_avg_ms": 0.21666666666666667,
+      "tokenize_ik_median_ms": 0.1921,
+      "tokenize_ik_stdev_ms": 0.040433333333333335,
+      "tokenize_beng_avg_ms": 0.1719,
+      "tokenize_beng_median_ms": 0.16883333333333334,
+      "tokenize_beng_stdev_ms": 0.024266666666666666,
+      "query_cn_hits": 8001.0,
+      "query_cn_avg_ms": 1.6525,
+      "query_cn_stdev_ms": 0.12846666666666667,
+      "query_beng_hits": 11000.0,
+      "query_beng_avg_ms": 2.5178666666666665,
+      "query_beng_stdev_ms": 0.44093333333333334,
+      "query_mixed_hits": 7332.0,
+      "query_mixed_avg_ms": 1.9762666666666668,
+      "query_mixed_stdev_ms": 0.10536666666666666,
+      "query_limit_hits": 20.0,
+      "query_limit_avg_ms": 3.129566666666667,
+      "query_limit_stdev_ms": 0.2845333333333333
+    },
+    "after": {
+      "git_dirty": 1.0,
+      "rows": 20000.0,
+      "batch": 500.0,
+      "rounds": 3000.0,
+      "query_rounds": 200.0,
+      "samples": 3.0,
+      "warmup": 30.0,
+      "skip_load": 0.0,
+      "select1_avg_ms": 0.1492,
+      "select1_stdev_ms": 0.028766666666666666,
+      "raw_load_sec": 0.5549999999999999,
+      "raw_load_rows_per_sec": 37714.0,
+      "build_ik_all_sec": 9.228333333333333,
+      "build_ik_content_sec": 7.200666666666667,
+      "build_beng_en_sec": 3.571333333333333,
+      "build_total_sec": 20.014333333333333,
+      "tokenize_ik_avg_ms": 0.20806666666666665,
+      "tokenize_ik_median_ms": 0.21033333333333334,
+      "tokenize_ik_stdev_ms": 0.013666666666666667,
+      "tokenize_beng_avg_ms": 0.1638,
+      "tokenize_beng_median_ms": 0.16296666666666668,
+      "tokenize_beng_stdev_ms": 0.016033333333333333,
+      "query_cn_hits": 8001.0,
+      "query_cn_avg_ms": 1.5911666666666666,
+      "query_cn_stdev_ms": 0.11743333333333333,
+      "query_beng_hits": 11000.0,
+      "query_beng_avg_ms": 2.0836,
+      "query_beng_stdev_ms": 0.17516666666666666,
+      "query_mixed_hits": 7332.0,
+      "query_mixed_avg_ms": 1.8840999999999999,
+      "query_mixed_stdev_ms": 0.10416666666666666,
+      "query_limit_hits": 20.0,
+      "query_limit_avg_ms": 2.7503,
+      "query_limit_stdev_ms": 0.26683333333333337
+    }
+  },
+  "categories": {
+    "build": {
+      "mean_improvement": 0.08534442229166835,
+      "metrics": [
+        {
+          "metric": "build_ik_all_sec",
+          "before": 10.626333333333333,
+          "after": 9.228333333333333,
+          "improvement": 0.13155996110292034
+        },
+        {
+          "metric": "build_ik_content_sec",
+          "before": 7.686,
+          "after": 7.200666666666667,
+          "improvement": 0.06314511232544018
+        },
+        {
+          "metric": "build_beng_en_sec",
+          "before": 3.8046666666666664,
+          "after": 3.571333333333333,
+          "improvement": 0.06132819344664453
+        }
+      ]
+    },
+    "tokenize": {
+      "mean_improvement": 0.04340636327023767,
+      "metrics": [
+        {
+          "metric": "tokenize_ik_avg_ms",
+          "before": 0.21666666666666667,
+          "after": 0.20806666666666665,
+          "improvement": 0.039692307692307804
+        },
+        {
+          "metric": "tokenize_beng_avg_ms",
+          "before": 0.1719,
+          "after": 0.1638,
+          "improvement": 0.04712041884816753
+        }
+      ]
+    },
+    "query": {
+      "mean_improvement": 0.0943536316993788,
+      "metrics": [
+        {
+          "metric": "query_cn_avg_ms",
+          "before": 1.6525,
+          "after": 1.5911666666666666,
+          "improvement": 0.03711548159354516
+        },
+        {
+          "metric": "query_beng_avg_ms",
+          "before": 2.5178666666666665,
+          "after": 2.0836,
+          "improvement": 0.17247405210760425
+        },
+        {
+          "metric": "query_mixed_avg_ms",
+          "before": 1.9762666666666668,
+          "after": 1.8840999999999999,
+          "improvement": 0.04663675617325613
+        },
+        {
+          "metric": "query_limit_avg_ms",
+          "before": 3.129566666666667,
+          "after": 2.7503,
+          "improvement": 0.12118823692310965
+        }
+      ]
+    }
+  },
+  "mean_improvement": 0.07436813908709494,
+  "run_order": [
+    "before-1",
+    "after-1",
+    "after-2",
+    "before-2",
+    "before-3",
+    "after-3"
+  ],
+  "startup_settle_seconds": 15,
+  "cpu_affinity": "0-3, all server threads, identical for both versions",
+  "official_baseline_available": false,
+  "note": "Local incremental comparison only; no official score prediction. All runs retained."
+}

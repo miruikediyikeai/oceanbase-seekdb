@@ -1015,6 +1015,45 @@ int ObFTParserJsonProps::show_parser_properties(const ObFTParserJsonProps &prope
 
 int ObFTParserProperty::parse_for_parser_helper(const ObFTParser &parser, const ObString &json_str)
 {
+  // Reuse only the decoded configuration. The exact bytes and parser version
+  // form the key; documents, dictionary contents and token results are never
+  // retained. Oversized configurations follow the ordinary parsing path.
+  struct ParsedConfigCache
+  {
+    ObFTParser parser_;
+    char json_[2048];
+    int64_t json_len_ = 0;
+    int64_t min_token_size_ = 0;
+    int64_t max_token_size_ = 0;
+    int64_t ngram_token_size_ = 0;
+    int64_t min_ngram_token_size_ = 0;
+    int64_t max_ngram_token_size_ = 0;
+    bool ik_mode_smart_ = true;
+    bool valid_ = false;
+  };
+  static thread_local ParsedConfigCache cache;
+  const bool cacheable = json_str.length() <= sizeof(cache.json_);
+  if (cacheable && cache.valid_ && cache.parser_ == parser
+      && cache.json_len_ == json_str.length()
+      && (json_str.empty() || MEMCMP(cache.json_, json_str.ptr(), json_str.length()) == 0)) {
+    // Preserve fields that this parser does not set, as the uncached path does
+    // when a helper is reset and then initialized with a different parser.
+    if (parser.is_ik()) {
+      dict_table_ = ObString(ObFTSLiteral::CONFIG_NAME_DICT_TABLE);
+      stopword_table_ = ObString(ObFTSLiteral::CONFIG_NAME_STOPWORD_TABLE);
+      quantifier_table_ = ObString(ObFTSLiteral::CONFIG_NAME_QUANTIFIER_TABLE);
+      ik_mode_smart_ = cache.ik_mode_smart_;
+    } else if (parser.is_space() || parser.is_beng()) {
+      min_token_size_ = cache.min_token_size_;
+      max_token_size_ = cache.max_token_size_;
+    } else if (parser.is_ngram()) {
+      ngram_token_size_ = cache.ngram_token_size_;
+    } else if (parser.is_ngram2()) {
+      min_ngram_token_size_ = cache.min_ngram_token_size_;
+      max_ngram_token_size_ = cache.max_ngram_token_size_;
+    }
+    return OB_SUCCESS;
+  }
   int ret = OB_SUCCESS;
   ObFTParserJsonProps props;
   if (OB_FAIL(props.init())) {
@@ -1063,6 +1102,21 @@ int ObFTParserProperty::parse_for_parser_helper(const ObFTParser &parser, const 
       } else if (OB_FAIL(props.config_get_max_ngram_token_size(max_ngram_token_size_))) {
       }
     }
+  }
+  if (OB_SUCC(ret) && cacheable) {
+    cache.valid_ = false;
+    cache.parser_ = parser;
+    cache.json_len_ = json_str.length();
+    if (!json_str.empty()) {
+      MEMCPY(cache.json_, json_str.ptr(), json_str.length());
+    }
+    cache.min_token_size_ = min_token_size_;
+    cache.max_token_size_ = max_token_size_;
+    cache.ngram_token_size_ = ngram_token_size_;
+    cache.min_ngram_token_size_ = min_ngram_token_size_;
+    cache.max_ngram_token_size_ = max_ngram_token_size_;
+    cache.ik_mode_smart_ = ik_mode_smart_;
+    cache.valid_ = true;
   }
   return ret;
 }

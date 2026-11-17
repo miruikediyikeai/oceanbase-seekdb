@@ -19,6 +19,32 @@ SELECT TOKENIZE(CAST(REPEAT('alpha ', 200) AS CHAR), 'beng', '[{"output":"all"}]
 SELECT TOKENIZE(CAST(REPEAT('中国人民银行 ', 80) AS CHAR), 'ik', '[{"output":"all"}]') AS tokens;
 SELECT TOKENIZE('', 'ik') AS tokens, TOKENIZE('', 'beng') AS english_tokens;
 
+# Repeated and changing parser configurations must remain independent of the
+# previous row or expression, including after an invalid configuration.
+CREATE TABLE token_configs(id INT PRIMARY KEY, parser VARCHAR(16), config TEXT);
+INSERT INTO token_configs VALUES
+ (1,'space','[{"output":"all"},{"additional_args":[{"min_token_size":1},{"max_token_size":10}]}]'),
+ (2,'space','[{"output":"all"},{"additional_args":[{"min_token_size":1},{"max_token_size":10}]}]'),
+ (3,'space','[{"additional_args":[{"min_token_size":4},{"max_token_size":18}]}]'),
+ (4,'beng','[{"output":"all"},{"additional_args":[{"min_token_size":2},{"max_token_size":12}]}]'),
+ (5,'beng','[{"output":"all"},{"additional_args":[{"min_token_size":2},{"max_token_size":12}]}]'),
+ (6,'ngram','[{"additional_args":[{"ngram_token_size":2}]}]'),
+ (7,'ngram','[{"additional_args":[{"ngram_token_size":3}]}]'),
+ (8,'ngram2','[{"additional_args":[{"min_ngram_size":2},{"max_ngram_size":3}]}]'),
+ (9,'ik','[{"output":"all"},{"additional_args":[{"ik_mode":"smart"}]}]'),
+ (10,'ik','[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]'),
+ (11,'ik','[{"output":"all"},{"additional_args":[{"ik_mode":"smart"}]}]'),
+ (12,'beng','[]');
+SELECT id, TOKENIZE('a ab ABC abcd abcde abcdef abcdefghijklmno 中国人民银行',parser,config) AS tokens
+ FROM token_configs ORDER BY id;
+SELECT TOKENIZE('abc abcd abcde','space','[{"additional_args":[{"min_token_size":4}]}]') AS first_tokens,
+       TOKENIZE('abc abcd abcde','space','[{"additional_args":[{"min_token_size":2}]}]') AS second_tokens,
+       TOKENIZE('abc abcd abcde','space','[{"additional_args":[{"min_token_size":4}]}]') AS third_tokens;
+--error 1210
+SELECT TOKENIZE('abc abcd','space','[{"additional_args":[{"min_token_size":0}]}]');
+SELECT TOKENIZE('abc abcd','space','[{"additional_args":[{"min_token_size":2}]}]') AS tokens;
+DROP TABLE token_configs;
+
 CREATE TABLE sort_keys(id INT PRIMARY KEY, s VARCHAR(128), n INT);
 INSERT INTO sort_keys VALUES
  (1,'Alpha',5),(2,'alpha',4),(3,'alpha ',3),(4,'alpha  ',2),

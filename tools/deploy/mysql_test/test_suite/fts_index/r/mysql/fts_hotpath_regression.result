@@ -33,6 +33,46 @@ tokens
 SELECT TOKENIZE('', 'ik') AS tokens, TOKENIZE('', 'beng') AS english_tokens;
 tokens	english_tokens
 []	[]
+CREATE TABLE token_configs(id INT PRIMARY KEY, parser VARCHAR(16), config TEXT);
+INSERT INTO token_configs VALUES
+(1,'space','[{"output":"all"},{"additional_args":[{"min_token_size":1},{"max_token_size":10}]}]'),
+(2,'space','[{"output":"all"},{"additional_args":[{"min_token_size":1},{"max_token_size":10}]}]'),
+(3,'space','[{"additional_args":[{"min_token_size":4},{"max_token_size":18}]}]'),
+(4,'beng','[{"output":"all"},{"additional_args":[{"min_token_size":2},{"max_token_size":12}]}]'),
+(5,'beng','[{"output":"all"},{"additional_args":[{"min_token_size":2},{"max_token_size":12}]}]'),
+(6,'ngram','[{"additional_args":[{"ngram_token_size":2}]}]'),
+(7,'ngram','[{"additional_args":[{"ngram_token_size":3}]}]'),
+(8,'ngram2','[{"additional_args":[{"min_ngram_size":2},{"max_ngram_size":3}]}]'),
+(9,'ik','[{"output":"all"},{"additional_args":[{"ik_mode":"smart"}]}]'),
+(10,'ik','[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]'),
+(11,'ik','[{"output":"all"},{"additional_args":[{"ik_mode":"smart"}]}]'),
+(12,'beng','[]');
+SELECT id, TOKENIZE('a ab ABC abcd abcde abcdef abcdefghijklmno 中国人民银行',parser,config) AS tokens
+FROM token_configs ORDER BY id;
+id	tokens
+1	{"tokens": [{"abcdef": 1}, {"ab": 1}, {"abcde": 1}, {"abcd": 1}, {"中国人民银行": 1}, {"abc": 1}], "doc_len": 6}
+2	{"tokens": [{"abcdef": 1}, {"ab": 1}, {"abcde": 1}, {"abcd": 1}, {"中国人民银行": 1}, {"abc": 1}], "doc_len": 6}
+3	["abcdef", "abcde", "abcd", "中国人民银行", "abcdefghijklmno"]
+4	{"tokens": [{"abcdef": 1}, {"ab": 1}, {"abcde": 1}, {"abcd": 1}, {"abc": 1}], "doc_len": 5}
+5	{"tokens": [{"abcdef": 1}, {"ab": 1}, {"abcde": 1}, {"abcd": 1}, {"abc": 1}], "doc_len": 5}
+6	["ab", "银行", "民银", "中国", "hi", "ef", "gh", "mn", "fg", "lm", "de", "ij", "no", "kl", "jk", "bc", "cd", "国人", "人民"]
+7	["cde", "fgh", "bcd", "人民银", "klm", "国人民", "mno", "efg", "def", "中国人", "hij", "abc", "jkl", "ijk", "ghi", "民银行", "lmn"]
+8	["ab", "银行", "民银", "中国", "hi", "ef", "gh", "mn", "cde", "fgh", "bcd", "fg", "人民银", "klm", "国人民", "mno", "lm", "efg", "de", "ij", "def", "中国人", "hij", "no", "kl", "abc", "jk", "jkl", "bc", "ijk", "cd", "国人", "ghi", "民银行", "人民", "lmn"]
+9	{"tokens": [{"abcdef": 1}, {"ab": 1}, {"abcde": 1}, {"a": 1}, {"abcd": 1}, {"中国人民银行": 1}, {"abc": 1}, {"abcdefghijklmno": 1}], "doc_len": 8}
+10	{"tokens": [{"abcdef": 1}, {"ab": 1}, {"银行": 1}, {"中国": 1}, {"abcde": 1}, {"人民银行": 1}, {"a": 1}, {"abcd": 1}, {"中国人民银行": 1}, {"中国人": 1}, {"中国人民": 1}, {"abc": 1}, {"abcdefghijklmno": 1}, {"国人": 1}, {"人民": 1}], "doc_len": 15}
+11	{"tokens": [{"abcdef": 1}, {"ab": 1}, {"abcde": 1}, {"a": 1}, {"abcd": 1}, {"中国人民银行": 1}, {"abc": 1}, {"abcdefghijklmno": 1}], "doc_len": 8}
+12	["abcdef", "abcde", "abcd", "中国人民银行", "abc", "abcdefghijklmno"]
+SELECT TOKENIZE('abc abcd abcde','space','[{"additional_args":[{"min_token_size":4}]}]') AS first_tokens,
+TOKENIZE('abc abcd abcde','space','[{"additional_args":[{"min_token_size":2}]}]') AS second_tokens,
+TOKENIZE('abc abcd abcde','space','[{"additional_args":[{"min_token_size":4}]}]') AS third_tokens;
+first_tokens	second_tokens	third_tokens
+["abcde", "abcd"]	["abcde", "abcd", "abc"]	["abcde", "abcd"]
+SELECT TOKENIZE('abc abcd','space','[{"additional_args":[{"min_token_size":0}]}]');
+ERROR HY000: Incorrect arguments to the min_token_size must be in [1, 16]
+SELECT TOKENIZE('abc abcd','space','[{"additional_args":[{"min_token_size":2}]}]') AS tokens;
+tokens
+["abcd", "abc"]
+DROP TABLE token_configs;
 CREATE TABLE sort_keys(id INT PRIMARY KEY, s VARCHAR(128), n INT);
 INSERT INTO sort_keys VALUES
 (1,'Alpha',5),(2,'alpha',4),(3,'alpha ',3),(4,'alpha  ',2),

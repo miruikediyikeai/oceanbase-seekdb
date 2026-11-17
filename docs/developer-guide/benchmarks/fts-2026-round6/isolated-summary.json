@@ -1,0 +1,32 @@
+{
+  "round5final": {
+    "token_ik": {
+      "wall_ms": 0.04095636635500796,
+      "server_cpu_ms": 0.04995
+    },
+    "token_beng": {
+      "wall_ms": 0.009701115059992844,
+      "server_cpu_ms": 0.00995
+    }
+  },
+  "round6config": {
+    "token_ik": {
+      "wall_ms": 0.04904897756499395,
+      "server_cpu_ms": 0.06470000000000001
+    },
+    "token_beng": {
+      "wall_ms": 0.006628996059998826,
+      "server_cpu_ms": 0.0068
+    }
+  },
+  "round6dict": {
+    "token_ik": {
+      "wall_ms": 0.03747652866499265,
+      "server_cpu_ms": 0.04615
+    },
+    "token_beng": {
+      "wall_ms": 0.00666255583000293,
+      "server_cpu_ms": 0.0068
+    }
+  }
+}

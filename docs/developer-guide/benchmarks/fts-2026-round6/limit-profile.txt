@@ -1,0 +1,70 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 9K of event 'cpu-clock'
+# Event count (approx.): 19505009864
+#
+# Overhead  Symbol                                                                                                                                                                                IPC   [IPC Coverage]
+# ........  ....................................................................................................................................................................................  ....................
+#
+     4.62%  [.] oceanbase::blocksstable::ObStringDiffDecoder::batch_decode                                                                                                                        -      -
+     4.55%  [.] oceanbase::storage::compare_binary_retrieval_ids                                                                                                                                  -      -
+     4.26%  [.] oceanbase::common::ObIArrayWrap<oceanbase::common::hash::ObHashSet<unsigned long, oceanbase::common::hash::NoPthreadDefendMode, oceanbase::common::hash::hash_func<unsigned long  -      -
+     2.64%  [.] oceanbase::storage::ObSimpleRowsMerger<oceanbase::storage::ObSRMergeItem, oceanbase::storage::ObSRMergeCmp>::push                                                                 -      -
+     2.33%  [.] oceanbase::sql::ObExprBM25::eval_batch_bm25_relevance_expr                                                                                                                        -      -
+     2.01%  [.] oceanbase::storage::ObSimpleRowsMerger<oceanbase::storage::ObBlockStatIterator::ObBlockStatKeyItem, oceanbase::storage::ObBlockStatIterator::ObBlockStatKeyCmp>::empty            -      -
+     1.98%  [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::advance_to                                                                                                                      -      -
+     1.93%  [.] oceanbase::storage::ObSRBMWIterImpl::next_pivot                                                                                                                                   -      -
+     1.59%  [.] 0x000000000726e360                                                                                                                                                                -      -
+     1.56%  [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::save_relevances_and_docids                                                                                                      -      -
+     1.32%  [.] oceanbase::blocksstable::batch_load_data_to_datum                                                                                                                                 -      -
+     1.29%  [.] oceanbase::storage::ObSRBMWIterImpl::advance_dim_iters_for_next_round                                                                                                             -      -
+     1.24%  [.] oceanbase::storage::ObSimpleRowsMerger<oceanbase::storage::ObSRMergeItem, oceanbase::storage::ObSRMergeCmp>::pop                                                                  -      -
+     1.18%  [.] oceanbase::common::ObIArrayWrap<int (*)(oceanbase::common::ObDatum const&, oceanbase::common::ObDatum const&, int&, oceanbase::common::ObDatumAccessContext const*)>::at          -      -
+     1.16%  [.] oceanbase::sql::ObBitVectorImpl<unsigned long>::at                                                                                                                                -      -
+     1.10%  [.] oceanbase::storage::ObSRBMWIterImpl::evaluate_pivot_range                                                                                                                         -      -
+     1.08%  [.] oceanbase::blocksstable::ObIntegerBaseDiffDecoder::batch_get_bitpacked_values                                                                                                     -      -
+     1.08%  [.] oceanbase::sql::ObDocIdExt::from_datum                                                                                                                                            -      -
+     1.06%  [.] oceanbase::storage::ObSRDaaTIterImpl::collect_dims_by_id                                                                                                                          -      -
+     1.00%  [.] oceanbase::storage::ObBlockMaxScoreIterator::advance_to                                                                                                                           -      -
+     0.99%  [.] oceanbase::storage::ObTextRetrievalBlockMaxIter::get_curr_id                                                                                                                      -      -
+     0.93%  [.] oceanbase::storage::ObSRDaaTIterImpl::fill_merge_heap                                                                                                                             -      -
+     0.92%  [.] oceanbase::storage::ObTextRetrievalBlockMaxIter::advance_to                                                                                                                       -      -
+     0.91%  [.] oceanbase::storage::ObTextRetrievalBlockMaxIter::get_curr_score                                                                                                                   -      -
+     0.89%  [.] oceanbase::storage::ObSRMergeCmp::get_id_datum                                                                                                                                    -      -
+     0.87%  [.] oceanbase::blocksstable::ObRowReader::setup_row                                                                                                                                   -      -
+     0.86%  [.] oceanbase::blocksstable::ObStringDiffDecoder::decode                                                                                                                              -      -
+     0.84%  [.] oceanbase::storage::ObSimpleRowsMerger<oceanbase::storage::ObSRMergeItem, oceanbase::storage::ObSRMergeCmp>::top                                                                  -      -
+     0.78%  [.] oceanbase::storage::ObBlockBatchedRowStore::get_row_ids                                                                                                                           -      -
+     0.76%  [.] oceanbase::storage::ObSimpleRowsMerger<oceanbase::storage::ObBlockStatIterator::ObBlockStatKeyItem, oceanbase::storage::ObBlockStatIterator::ObBlockStatKeyCmp>::is_unique_champ  -      -
+     0.70%  [.] oceanbase::storage::ObSRBMWIterImpl::top_k_search                                                                                                                                 -      -
+     0.67%  [.] oceanbase::storage::ObTextRetrievalBlockMaxIter::get_dim_max_score                                                                                                                -      -
+     0.61%  [.] oceanbase::storage::ObTextRetrievalBlockMaxIter::advance_shallow                                                                                                                  -      -
+     0.61%  [.] oceanbase::storage::ObTextRetrievalBlockMaxIter::get_next_row                                                                                                                     -      -
+     0.57%  [.] oceanbase::common::ObIOService::get_io_config                                                                                                                                     -      -
+     0.55%  [.] oceanbase::common::ObIArrayWrap<oceanbase::common::ObTuple<oceanbase::sql::ObRawExpr*, oceanbase::sql::ObRawExpr*> >::at                                                          -      -
+     0.53%  [.] oceanbase::blocksstable::ObMicroBlockDecoder::compare_rowkey                                                                                                                      -      -
+     0.53%  [.] oceanbase::storage::ObDomainIdCmp::compare                                                                                                                                        -      -
+     0.53%  [.] 0x000000000726e2b0                                                                                                                                                                -      -
+     0.51%  [.] oceanbase::sql::ObExpr::locate_datums_for_update                                                                                                                                  -      -
+     0.50%  [.] oceanbase::common::ObKVCacheMap::get                                                                                                                                              -      -
+     0.47%  [.] oceanbase::common::PageArena<char, oceanbase::common::ModulePageAllocator>::_alloc_aligned                                                                                        -      -
+     0.47%  [.] oceanbase::sql::ObExpr::do_eval_batch                                                                                                                                             -      -
+     0.47%  [.] oceanbase::storage::ObSRBMWIterImpl::evaluate_pivot                                                                                                                               -      -
+     0.45%  [.] oceanbase::sql::ObDASCacheLookupIter::IndexProjRowStore::init                                                                                                                     -      -
+     0.45%  [.] oceanbase::storage::ObTextRetrievalBlockMaxIter::in_shallow_status                                                                                                                -      -
+     0.41%  [.] oceanbase::blocksstable::ObMicroBlockGetReader::locate_rowkey                                                                                                                     -      -
+     0.41%  [.] oceanbase::storage::ObTextRetrievalBlockMaxIter::get_curr_block_max_info                                                                                                          -      -
+     0.39%  [.] oceanbase::storage::ObMicroBlockDataHandle::reset                                                                                                                                 -      -
+     0.34%  [.] non-virtual thunk to oceanbase::share::ObPluginVectorIndexLoadScheduler::flush(oceanbase::share::SCN&)                                                                            -      -
+     0.34%  [.] oceanbase::blocksstable::ObIntArrayFuncTable::upper_bound<unsigned short>                                                                                                         -      -
+     0.34%  [.] oceanbase::blocksstable::ObStorageDatumCmpFunc::compare                                                                                                                           -      -
+     0.34%  [.] oceanbase::storage::ObSRBMWIterImpl::process_collected_row                                                                                                                        -      -
+     0.33%  [.] oceanbase::common::serialization::decode_i64                                                                                                                                      -      -
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

@@ -1,0 +1,278 @@
+{
+  "0:round5final": {
+    "token_ik": [
+      {
+        "wall_ms": 0.04446661795000182,
+        "server_cpu_ms": 0.0465
+      },
+      {
+        "wall_ms": 0.0335872567000024,
+        "server_cpu_ms": 0.034
+      },
+      {
+        "wall_ms": 0.03622258980003608,
+        "server_cpu_ms": 0.0365
+      },
+      {
+        "wall_ms": 0.05449151249999886,
+        "server_cpu_ms": 0.0925
+      },
+      {
+        "wall_ms": 0.05851650939998763,
+        "server_cpu_ms": 0.07
+      }
+    ],
+    "token_beng": [
+      {
+        "wall_ms": 0.012040176350001274,
+        "server_cpu_ms": 0.013
+      },
+      {
+        "wall_ms": 0.010396684999977878,
+        "server_cpu_ms": 0.0105
+      },
+      {
+        "wall_ms": 0.011627409949960565,
+        "server_cpu_ms": 0.012
+      },
+      {
+        "wall_ms": 0.011306220300002678,
+        "server_cpu_ms": 0.011
+      },
+      {
+        "wall_ms": 0.011638831849995767,
+        "server_cpu_ms": 0.012
+      }
+    ]
+  },
+  "1:round6config": {
+    "token_ik": [
+      {
+        "wall_ms": 0.0779881854999985,
+        "server_cpu_ms": 0.0825
+      },
+      {
+        "wall_ms": 0.09141272114998174,
+        "server_cpu_ms": 0.1845
+      },
+      {
+        "wall_ms": 0.04839892049999435,
+        "server_cpu_ms": 0.0645
+      },
+      {
+        "wall_ms": 0.042288895100000445,
+        "server_cpu_ms": 0.0435
+      },
+      {
+        "wall_ms": 0.03803673589995924,
+        "server_cpu_ms": 0.039
+      }
+    ],
+    "token_beng": [
+      {
+        "wall_ms": 0.007260042950019851,
+        "server_cpu_ms": 0.0075
+      },
+      {
+        "wall_ms": 0.006801078400030747,
+        "server_cpu_ms": 0.007
+      },
+      {
+        "wall_ms": 0.00652905679999094,
+        "server_cpu_ms": 0.0065
+      },
+      {
+        "wall_ms": 0.006362204499964719,
+        "server_cpu_ms": 0.0065
+      },
+      {
+        "wall_ms": 0.006982944950004821,
+        "server_cpu_ms": 0.0075
+      }
+    ]
+  },
+  "2:round6dict": {
+    "token_ik": [
+      {
+        "wall_ms": 0.03460146454999631,
+        "server_cpu_ms": 0.036
+      },
+      {
+        "wall_ms": 0.045309437449986945,
+        "server_cpu_ms": 0.047
+      },
+      {
+        "wall_ms": 0.03698362979998819,
+        "server_cpu_ms": 0.0375
+      },
+      {
+        "wall_ms": 0.04542306509997616,
+        "server_cpu_ms": 0.0795
+      },
+      {
+        "wall_ms": 0.03989107179995699,
+        "server_cpu_ms": 0.0535
+      }
+    ],
+    "token_beng": [
+      {
+        "wall_ms": 0.006950447400004123,
+        "server_cpu_ms": 0.007
+      },
+      {
+        "wall_ms": 0.007096063649987628,
+        "server_cpu_ms": 0.0075
+      },
+      {
+        "wall_ms": 0.00669660664998446,
+        "server_cpu_ms": 0.007
+      },
+      {
+        "wall_ms": 0.006548367000004873,
+        "server_cpu_ms": 0.0065
+      },
+      {
+        "wall_ms": 0.0069863260499914755,
+        "server_cpu_ms": 0.007
+      }
+    ]
+  },
+  "3:round6dict": {
+    "token_ik": [
+      {
+        "wall_ms": 0.030727293300014936,
+        "server_cpu_ms": 0.0315
+      },
+      {
+        "wall_ms": 0.03228008974997465,
+        "server_cpu_ms": 0.0325
+      },
+      {
+        "wall_ms": 0.034428910250017,
+        "server_cpu_ms": 0.035
+      },
+      {
+        "wall_ms": 0.0440469523000047,
+        "server_cpu_ms": 0.0775
+      },
+      {
+        "wall_ms": 0.031073372350010686,
+        "server_cpu_ms": 0.0315
+      }
+    ],
+    "token_beng": [
+      {
+        "wall_ms": 0.006037297350030712,
+        "server_cpu_ms": 0.006
+      },
+      {
+        "wall_ms": 0.006390496950007219,
+        "server_cpu_ms": 0.0065
+      },
+      {
+        "wall_ms": 0.006537645800017344,
+        "server_cpu_ms": 0.0065
+      },
+      {
+        "wall_ms": 0.006705365949983388,
+        "server_cpu_ms": 0.007
+      },
+      {
+        "wall_ms": 0.006676941500018074,
+        "server_cpu_ms": 0.007
+      }
+    ]
+  },
+  "4:round6config": {
+    "token_ik": [
+      {
+        "wall_ms": 0.03715647260000878,
+        "server_cpu_ms": 0.039
+      },
+      {
+        "wall_ms": 0.03373091399998884,
+        "server_cpu_ms": 0.034
+      },
+      {
+        "wall_ms": 0.03901491285000702,
+        "server_cpu_ms": 0.04
+      },
+      {
+        "wall_ms": 0.041439357850003945,
+        "server_cpu_ms": 0.065
+      },
+      {
+        "wall_ms": 0.041022660199996605,
+        "server_cpu_ms": 0.055
+      }
+    ],
+    "token_beng": [
+      {
+        "wall_ms": 0.006387166749982498,
+        "server_cpu_ms": 0.0065
+      },
+      {
+        "wall_ms": 0.006619900299983783,
+        "server_cpu_ms": 0.0065
+      },
+      {
+        "wall_ms": 0.006461419700008264,
+        "server_cpu_ms": 0.0065
+      },
+      {
+        "wall_ms": 0.006420942249997097,
+        "server_cpu_ms": 0.007
+      },
+      {
+        "wall_ms": 0.006465204000005542,
+        "server_cpu_ms": 0.0065
+      }
+    ]
+  },
+  "5:round5final": {
+    "token_ik": [
+      {
+        "wall_ms": 0.031012028500026646,
+        "server_cpu_ms": 0.032
+      },
+      {
+        "wall_ms": 0.03358036715003436,
+        "server_cpu_ms": 0.0345
+      },
+      {
+        "wall_ms": 0.041064549749989965,
+        "server_cpu_ms": 0.0415
+      },
+      {
+        "wall_ms": 0.03553755464999995,
+        "server_cpu_ms": 0.048
+      },
+      {
+        "wall_ms": 0.04108467715000188,
+        "server_cpu_ms": 0.064
+      }
+    ],
+    "token_beng": [
+      {
+        "wall_ms": 0.007587042399973143,
+        "server_cpu_ms": 0.008
+      },
+      {
+        "wall_ms": 0.007521838900038347,
+        "server_cpu_ms": 0.0075
+      },
+      {
+        "wall_ms": 0.00731520700001056,
+        "server_cpu_ms": 0.007
+      },
+      {
+        "wall_ms": 0.007594127149968699,
+        "server_cpu_ms": 0.008
+      },
+      {
+        "wall_ms": 0.009983611699999529,
+        "server_cpu_ms": 0.0105
+      }
+    ]
+  }
+}

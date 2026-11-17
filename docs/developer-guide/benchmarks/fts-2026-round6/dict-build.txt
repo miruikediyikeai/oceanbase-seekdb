@@ -1,0 +1,3 @@
+Building CXX object src/storage/CMakeFiles/ob_storage.dir/Unity/unity_ob_storage_ob_storage_ik_0_c___cxx.cxx.o
+Linking CXX static library libob_storage_static.a
+Linking CXX executable seekdb

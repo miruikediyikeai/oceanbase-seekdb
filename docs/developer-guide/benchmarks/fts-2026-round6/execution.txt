@@ -1,0 +1,50 @@
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round5final
+PASS 1668 result sets fb3ebedb7872bf65b93fd738bf0f99b4a0b630c1eef0946fd7053836395a6bf8
+EXTENDED PASS 1302 a49a8115643d89e085e68f8043380ad5d19030972e5757028209eebaa6d2a166
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round6dict
+PASS 1668 result sets fb3ebedb7872bf65b93fd738bf0f99b4a0b630c1eef0946fd7053836395a6bf8
+EXTENDED PASS 1302 a49a8115643d89e085e68f8043380ad5d19030972e5757028209eebaa6d2a166
+fts_ik_bmw_seek_regression PASS
+fts_score_filter_regression PASS
+fts_build_batch_regression PASS
+fts_batch_merge_regression PASS
+fts_hotpath_regression PASS
+tokenize_function PASS
+simple_query PASS
+parser_properties PASS
+domain_id_merge_with_compare_null PASS
+create_table_with_fts_index PASS
+create_fts_index_afterward PASS
+FAILED: []
+UNICODE PASS 1062 26e9f26e63e86867c4fa82e3e584e72222204bffafa122552eea5b034e8476c0
+PASS 25 cases, 8 connections x 200 calls, error recovery, long unique documents
+ROUND6 VALIDATION COMPLETE
+PASS 1668 result sets fb3ebedb7872bf65b93fd738bf0f99b4a0b630c1eef0946fd7053836395a6bf8
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round5final
+PASS 1668 result sets fb3ebedb7872bf65b93fd738bf0f99b4a0b630c1eef0946fd7053836395a6bf8
+fts-r6-final-before-1 COMPLETE
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round6dict
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+fts-r6-final-after-1 COMPLETE
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round6dict
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+fts-r6-final-after-2 COMPLETE
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round5final
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+fts-r6-final-before-2 COMPLETE
+PASS 1668 result sets fb3ebedb7872bf65b93fd738bf0f99b4a0b630c1eef0946fd7053836395a6bf8
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round5final
+PASS 1668 result sets fb3ebedb7872bf65b93fd738bf0f99b4a0b630c1eef0946fd7053836395a6bf8
+fts-r6-final-before-3 COMPLETE
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round6dict
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+fts-r6-final-after-3 COMPLETE
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round5final
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round6dict
+ROUND6 BENCH COMPLETE

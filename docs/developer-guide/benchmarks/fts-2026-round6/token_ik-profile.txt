@@ -1,0 +1,74 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 4K of event 'cpu-clock'
+# Event count (approx.): 9158316560
+#
+# Overhead  Symbol                                                                                                                                                                                IPC   [IPC Coverage]
+# ........  ....................................................................................................................................................................................  ....................
+#
+     7.31%  [.] oceanbase::storage::ObArrayHashMap::find                                                                                                                                          -      -
+     6.89%  [.] oceanbase::storage::ObFTDATReader<void>::match_with_hit                                                                                                                           -      -
+     1.51%  [.] oceanbase::common::ObCharset::strcmp                                                                                                                                              -      -
+     1.51%  [.] oceanbase::common::PageArena<char, oceanbase::common::ModulePageAllocator>::_alloc_aligned                                                                                        -      -
+     1.29%  [.] oceanbase::storage::ObAddWord::groupby_word                                                                                                                                       -      -
+     1.23%  [.] oceanbase::storage::ObFTRangeDict::find_first_char_range                                                                                                                          -      -
+     1.05%  [.] oceanbase::common::ObCharset::is_argument_valid                                                                                                                                   -      -
+     0.98%  [.] oceanbase::omt::ObThWorker::worker                                                                                                                                                -      -
+     0.96%  [.] oceanbase::common::ObArenaAllocator::alloc                                                                                                                                        -      -
+     0.88%  [.] oceanbase::storage::ObIKCJKProcessor::do_process                                                                                                                                  -      -
+     0.83%  [.] ob_hash_sort_utf8mb4                                                                                                                                                              -      -
+     0.83%  [.] ob_strnncoll_mb_bin                                                                                                                                                               -      -
+     0.79%  [.] oceanbase::share::ObColumnChecksumErrorInfoTableStorage::~ObColumnChecksumErrorInfoTableStorage                                                                                   -      -
+     0.77%  [.] ob_casedn_utf8mb4                                                                                                                                                                 -      -
+     0.72%  [.] oceanbase::common::ObILobCursor::read_bool                                                                                                                                        -      -
+     0.70%  [.] oceanbase::common::ObCharset::get_charset                                                                                                                                         -      -
+     0.70%  [.] oceanbase::common::ObLobInRowCursor::get_length                                                                                                                                   -      -
+     0.68%  [.] oceanbase::common::ObCharset::get_charset_uninit                                                                                                                                  -      -
+     0.63%  [.] oceanbase::common::ObPriorityQueue2<1, 2, 3>::do_pop                                                                                                                              -      -
+     0.61%  [.] std::sys::backtrace::__rust_begin_short_backtrace::<sql_nio::reactor::nio_start_in_dir::{closure#1}::{closure#0}, ()>                                                             -      -
+     0.59%  [.] oceanbase::common::ObJsonBin::json_type                                                                                                                                           -      -
+     0.57%  [.] oceanbase::sql::ObFastParserMysql::parse_next_token                                                                                                                               -      -
+     0.57%  [.] oceanbase::storage::ObUnicodeBlockUtils::is_unicode_cn_number                                                                                                                     -      -
+     0.55%  [.] oceanbase::storage::ObFTSortList::add_token                                                                                                                                       -      -
+     0.53%  [.] oceanbase::common::ObLobInRowCursor::get                                                                                                                                          -      -
+     0.50%  [.] oceanbase::common::ObJsonBinMetaParser::parse_header_v0_                                                                                                                          -      -
+     0.50%  [.] oceanbase::storage::ObFTCharUtil::read_char                                                                                                                                       -      -
+     0.50%  [.] oceanbase::storage::ObIKFTParser::process_next_batch                                                                                                                              -      -
+     0.50%  [.] oceanbase::storage::ObIKQuantifierProcessor::process_CN_count                                                                                                                     -      -
+     0.46%  [.] je_malloc_default                                                                                                                                                                 -      -
+     0.46%  [.] oceanbase::restore::ObRestoreHelperMacroBlockCtx::get_type                                                                                                                        -      -
+     0.46%  [.] oceanbase::storage::ObFTParseHelper::make_token_array_json                                                                                                                        -      -
+     0.44%  [.] oceanbase::common::ObJsonBin::init_bin_data                                                                                                                                       -      -
+     0.44%  [.] oceanbase::common::ObJsonVar::read_var                                                                                                                                            -      -
+     0.44%  [.] oceanbase::common::SCondTemp<3>::signal                                                                                                                                           -      -
+     0.42%  [.] ob_ismbchar_utf8mb4                                                                                                                                                               -      -
+     0.42%  [.] ob_mb_wc_utf8mb4                                                                                                                                                                  -      -
+     0.42%  [.] oceanbase::common::ObStringBuffer::reserve                                                                                                                                        -      -
+     0.42%  [.] oceanbase::lib::ObFutex::wait                                                                                                                                                     -      -
+     0.39%  [.] non-virtual thunk to oceanbase::share::ObPluginVectorIndexLoadScheduler::flush(oceanbase::share::SCN&)                                                                            -      -
+     0.39%  [.] oceanbase::common::ObStringBuffer::append                                                                                                                                         -      -
+     0.39%  [.] oceanbase::common::ObStringBuffer::append                                                                                                                                         -      -
+     0.39%  [.] oceanbase::storage::ObIKQuantifierProcessor::do_process                                                                                                                           -      -
+     0.39%  [.] 0x000000000726e2b0                                                                                                                                                                -      -
+     0.37%  [.] oceanbase::common::ObFixedArrayImpl<oceanbase::common::ObFixedArray<oceanbase::sql::ObPCParam*, oceanbase::common::ObIAllocator>*, oceanbase::common::ObIAllocator>::destroy      -      -
+     0.37%  [.] oceanbase::sql::ObExprTokenize::tokenize_fulltext                                                                                                                                 -      -
+     0.37%  [.] oceanbase::sql::ObOperator::get_next_row                                                                                                                                          -      -
+     0.35%  [.] oceanbase::common::PageArena<oceanbase::common::ObRstarTree<oceanbase::common::ObSegment>*, oceanbase::common::ModulePageAllocator>::alloc_new_page                               -      -
+     0.33%  [.] <sql_nio::reactor::EventLoop>::drive_writable                                                                                                                                     -      -
+     0.33%  [.] oceanbase::common::ObIJsonBase::print_array                                                                                                                                       -      -
+     0.33%  [.] oceanbase::common::ObJsonArray::append                                                                                                                                            -      -
+     0.33%  [.] oceanbase::common::ObJsonBinSerializer::serialize_json_value                                                                                                                      -      -
+     0.33%  [.] oceanbase::observer::ObMPQuery::process_single_stmt                                                                                                                               -      -
+     0.33%  [.] oceanbase::storage::ObIKArbitrator::output_result                                                                                                                                 -      -
+     0.33%  [.] rapidjson::GenericReader<rapidjson::UTF8<char>, rapidjson::UTF8<char>, oceanbase::common::ObRapidJsonAllocator>::ParseString<1u, rapidjson::GenericInsituStringStream<rapidjson:  -      -
+     0.33%  [.] std::__find_if<char const*, __gnu_cxx::__ops::_Iter_pred<oceanbase::common::ObFindEscapeFunc> >                                                                                   -      -
+     0.31%  [.] oceanbase::observer::ObMPQuery::process                                                                                                                                           -      -
+     0.31%  [.] oceanbase::sql::ObFastParserMysql::process_string                                                                                                                                 -      -
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

@@ -1,0 +1,6 @@
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round5final
+fts_hotpath_regression PASS
+FAILED: []
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round6dict
+fts_hotpath_regression PASS
+FAILED: []

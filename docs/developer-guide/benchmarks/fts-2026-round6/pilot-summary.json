@@ -1,0 +1,92 @@
+{
+  "round5final": {
+    "select1": {
+      "wall_ms": 0.23778359539996927,
+      "server_cpu_ms": 0.139
+    },
+    "token_ik": {
+      "wall_ms": 0.4227643607666778,
+      "server_cpu_ms": 0.2728333333333333
+    },
+    "token_beng": {
+      "wall_ms": 0.26760948176665805,
+      "server_cpu_ms": 0.1525
+    },
+    "cn": {
+      "wall_ms": 1.800130318499896,
+      "server_cpu_ms": 1.615
+    },
+    "beng": {
+      "wall_ms": 2.0692953054999634,
+      "server_cpu_ms": 1.9224999999999999
+    },
+    "mixed": {
+      "wall_ms": 2.1275473755001713,
+      "server_cpu_ms": 1.9474999999999998
+    },
+    "limit": {
+      "wall_ms": 4.0354255392499,
+      "server_cpu_ms": 3.8674999999999997
+    }
+  },
+  "round6config": {
+    "select1": {
+      "wall_ms": 0.1824697474000004,
+      "server_cpu_ms": 0.099
+    },
+    "token_ik": {
+      "wall_ms": 0.3707484258166611,
+      "server_cpu_ms": 0.2365
+    },
+    "token_beng": {
+      "wall_ms": 0.38121832153333346,
+      "server_cpu_ms": 0.22433333333333336
+    },
+    "cn": {
+      "wall_ms": 2.5050698085001386,
+      "server_cpu_ms": 2.285
+    },
+    "beng": {
+      "wall_ms": 2.879204972749676,
+      "server_cpu_ms": 2.66
+    },
+    "mixed": {
+      "wall_ms": 2.2306836227501208,
+      "server_cpu_ms": 2.0324999999999998
+    },
+    "limit": {
+      "wall_ms": 3.8396768857498955,
+      "server_cpu_ms": 3.6625
+    }
+  },
+  "round6dict": {
+    "select1": {
+      "wall_ms": 0.2321559980499842,
+      "server_cpu_ms": 0.184
+    },
+    "token_ik": {
+      "wall_ms": 0.2945845289666522,
+      "server_cpu_ms": 0.1805
+    },
+    "token_beng": {
+      "wall_ms": 0.25473604433333696,
+      "server_cpu_ms": 0.14166666666666666
+    },
+    "cn": {
+      "wall_ms": 1.5149622704998364,
+      "server_cpu_ms": 1.3575
+    },
+    "beng": {
+      "wall_ms": 2.0774853002499185,
+      "server_cpu_ms": 1.92
+    },
+    "mixed": {
+      "wall_ms": 1.8808618662499157,
+      "server_cpu_ms": 1.7225
+    },
+    "limit": {
+      "wall_ms": 2.7792088960002275,
+      "server_cpu_ms": 2.615
+    }
+  }
+}

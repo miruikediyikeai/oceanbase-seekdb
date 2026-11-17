@@ -1,0 +1,46 @@
+{
+  "base_commit": "3460b431dfcf601d14588bb9eca296702abc4184",
+  "source_sha256": {
+    "src/sql/engine/expr/ob_expr_tokenize.h": "ada94343d732dadeb082d766b4e7f15e85d7ef829b4bc0a4cd69990a9b50c1c6",
+    "src/sql/engine/expr/ob_expr_tokenize.cpp": "fcb134c0fbc9d5007081f3d593935dc54cb6296506d23f6297e7ec439cb09734",
+    "src/storage/fts/ob_fts_parser_property.cpp": "69c3b49cb494afd7258f0ed382d191acc72f66e0782f1445ffbe94d597231e9f",
+    "src/storage/fts/dict/ob_ft_dat_dict.cpp": "479c2274c47a91d3e1f84b14290f0ad33de2f61f3b2cf806acf869a19dbc1f49"
+  },
+  "benchmark_sha256": {
+    "tools/benchmark/fts_large_bench.sh": "596ea5d1c0038e666b78aa94bef22d2dfb87ffc9e84dbc7e2a1da1f746424462",
+    "tools/benchmark/fts_large_bench_gen.py": "b0c816dd8211ac0471f60b72a37a3fb5c62580357a5b6d7ac95f5a8c2e3f143d",
+    "tools/benchmark/fts_large_bench_setup.sql": "311826751df7f51ac45156fb4284aeca9bd9197370aceb88f4fb92832b458108",
+    "tools/benchmark/fts_large_bench_score.py": "bea52eb1c68d05693bb3ac5b910ab0e2fa0e70e01582f40466898ee1e2e3ef55",
+    "tools/benchmark/fts_large_bench_baseline.json": "f4e97eddb2e49c982b967fc8047f7cf37177eebe53d648f6746d85aacda91f0c"
+  },
+  "mysqltests_passed": [
+    "fts_ik_bmw_seek_regression",
+    "fts_score_filter_regression",
+    "fts_build_batch_regression",
+    "fts_batch_merge_regression",
+    "fts_hotpath_regression",
+    "tokenize_function",
+    "simple_query",
+    "parser_properties",
+    "domain_id_merge_with_compare_null",
+    "create_table_with_fts_index",
+    "create_fts_index_afterward"
+  ],
+  "result_sets": 1668,
+  "extended_result_sets": 1302,
+  "unicode_result_sets": 1062,
+  "concurrency": "8 connections x 200 calls, error recovery, long unique documents",
+  "binary_sha256": {
+    "round5final": "bb68b00d611a9a8f1ac93d706ab80c765d087359c429880a073e323bc5ce62ef",
+    "round6config": "08f0188cffb11aaf3d65ba9b3051b6fd2ce6d3aaa90b2cc66eab5b2f144fff38",
+    "round6dict": "0030f15e19afa5f44c2c6770f1d9a467c3e17159908042f9ef95933810924d85"
+  },
+  "timesync_restored": true,
+  "build": "Release incremental rebuild of SQL expression, FTS configuration and IK dictionary unity objects, archives and executable",
+  "max_length_regression": "Expected results recorded on round5final, then verified on round6dict; includes a 15-character token across configurations with maximum lengths 10, 12 and 18.",
+  "regression_sha256": {
+    "tools/deploy/mysql_test/test_suite/fts_index/t/fts_hotpath_regression.test": "88dd3bb3060bacc4c1a6305d74e950d9d9a571f099753b8152177c95d815a7b9",
+    "tools/deploy/mysql_test/test_suite/fts_index/r/mysql/fts_hotpath_regression.result": "4cc2e893ebab2a9257c2dfd6a5397019e6c5445c6fb7ff46cb295facca30ee1e"
+  },
+  "unity_cpp_sources_compared_to_repository": 55
+}
