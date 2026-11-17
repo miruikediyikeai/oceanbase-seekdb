@@ -20,6 +20,7 @@
 #include "query/das/ob_das_iter_access.h"
 #include "share/rc/ob_server_runtime.h"
 #include "query/engine/expr/ob_expr_bm25.h"
+#include "ob_sparse_retrieval_util.h"
 
 namespace oceanbase
 {
@@ -435,7 +436,9 @@ int ObTextRetrievalDaaTTokenIter::init(const ObTextRetrievalScanIterParam &iter_
       inv_scan_domain_id_col_ = iter_param.inv_scan_domain_id_col_;
       max_batch_size_ = OB_MAX(iter_param.eval_ctx_->max_batch_size_, 1);
       common::ObDatumBasicFuncs *basic_funcs = ObDatumFuncs::get_basic_func(inv_scan_domain_id_col_->datum_meta_.type_, CS_TYPE_BINARY);
-      cmp_func_ = basic_funcs->null_first_cmp_;
+      cmp_func_ = inv_scan_domain_id_col_->datum_meta_.type_ == ObVarcharType
+          && inv_scan_domain_id_col_->datum_meta_.cs_type_ == CS_TYPE_BINARY
+          ? compare_binary_retrieval_ids : basic_funcs->null_first_cmp_;
       if (OB_ISNULL(cmp_func_)) {
         ret = OB_ERR_UNEXPECTED;
       } else if (FALSE_IT(relevance_.set_allocator(allocator_))) {
@@ -545,6 +548,7 @@ int ObTextRetrievalDaaTTokenIter::advance_to(const ObDatum &id_datum)
   int ret = OB_SUCCESS;
   int result = 0;
   bool find = false;
+  int64_t linear_probes = 8;
 
   if (cur_idx_ < 0) {
     ret = OB_ERR_UNEXPECTED;
@@ -557,6 +561,38 @@ int ObTextRetrievalDaaTTokenIter::advance_to(const ObDatum &id_datum)
         find = true;
       } else {
         ++cur_idx_;
+        // Keep nearby seeks linear: checking the dense bitmap and setting up
+        // binary search costs more than a few sequential ID comparisons.
+        // After eight misses, gallop and lower_bound within a dense batch,
+        // whose IDs are sorted by this same comparator.
+        if (--linear_probes == 0 && eval_ctx_->is_vectorized()
+            && token_iter_->get_skip()->is_all_false(count_)) {
+          int64_t first = cur_idx_;
+          int64_t last = count_;
+          int64_t step = 1;
+          while (OB_SUCC(ret) && first < last) {
+            const int64_t probe = first + MIN(step - 1, last - first - 1);
+            if (OB_FAIL(cmp_func_(id_datum, doc_id_.get_data()[probe].get_datum(), result, nullptr))) {
+            } else if (result <= 0) {
+              last = probe;
+              break;
+            } else {
+              first = probe + 1;
+              step = MIN(step * 2, count_);
+            }
+          }
+          while (OB_SUCC(ret) && first < last) {
+            const int64_t mid = first + (last - first) / 2;
+            if (OB_FAIL(cmp_func_(id_datum, doc_id_.get_data()[mid].get_datum(), result, nullptr))) {
+            } else if (result <= 0) {
+              last = mid;
+            } else {
+              first = mid + 1;
+            }
+          }
+          cur_idx_ = first;
+          find = OB_SUCC(ret) && cur_idx_ < count_;
+        }
       }
     } else if (OB_FAIL(token_iter_->advance_to(id_datum))) {
     } else if (OB_FAIL(get_next_row())) {

@@ -1,0 +1,60 @@
+# Preserve IK arbitration and ranked posting seeks across 256-row batches.
+# Expected results are recorded from the preceding competition executable.
+--disable_warnings
+DROP DATABASE IF EXISTS fts_ik_bmw_seek_regression;
+--enable_warnings
+CREATE DATABASE fts_ik_bmw_seek_regression;
+USE fts_ik_bmw_seek_regression;
+SET NAMES utf8mb4;
+SET ob_query_timeout=1000000000;
+CREATE TABLE digits(n INT PRIMARY KEY);
+INSERT INTO digits VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
+CREATE TABLE docs(id INT PRIMARY KEY,body LONGTEXT,FULLTEXT INDEX ft(body) WITH PARSER ik);
+INSERT INTO docs
+SELECT n,CASE WHEN n%17=0 THEN NULL WHEN n%19=0 THEN '' ELSE CONCAT(
+ REPEAT('数据库 database ',1+n%7),
+ IF(n%3=0,'南京市长江大桥 alpha alpha ','中国人民银行 beta '),
+ IF(n%11=0,'rare 稀有 gamma ','common 普通 delta '),
+ IF(n%127=0,'needle 精确 ',' '),REPEAT('索引 search ',n%13)) END
+FROM (SELECT 1+a.n+10*b.n+100*c.n+1000*d.n AS n FROM digits a,digits b,digits c,digits d)s
+WHERE n<=2053;
+DELETE FROM docs WHERE id%23=0;
+UPDATE docs SET body='changed 数据库 needle 精确' WHERE id%251=0;
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('数据库 database');
+SELECT id,ROUND(score,10) FROM
+ (SELECT id,MATCH(body) AGAINST('数据库 database') AS score FROM docs
+  WHERE MATCH(body) AGAINST('数据库 database') LIMIT 20)t ORDER BY id;
+SELECT id,ROUND(score,10) FROM
+ (SELECT id,MATCH(body) AGAINST('数据库 rare needle 精确') AS score FROM docs
+  WHERE MATCH(body) AGAINST('数据库 rare needle 精确') LIMIT 17 OFFSET 255)t ORDER BY id;
+SELECT id,ROUND(score,10) FROM
+ (SELECT id,MATCH(body) AGAINST('rare needle') AS score FROM docs
+  WHERE MATCH(body) AGAINST('rare needle') LIMIT 7 OFFSET 1)t ORDER BY id;
+SELECT COUNT(*),SUM(id),ROUND(SUM(score),9) FROM
+ (SELECT id,MATCH(body) AGAINST('database alpha beta 索引') AS score FROM docs
+  WHERE MATCH(body) AGAINST('database alpha beta 索引') LIMIT 257 OFFSET 256)t;
+SELECT COUNT(*),SUM(id),ROUND(SUM(score),9) FROM
+ (SELECT id,MATCH(body) AGAINST('database alpha beta 索引') AS score FROM docs
+  WHERE MATCH(body) AGAINST('database alpha beta 索引') LIMIT 513 OFFSET 1023)t;
+SELECT id,ROUND(score,10) FROM
+ (SELECT id,MATCH(body) AGAINST('+数据库 -needle' IN BOOLEAN MODE) AS score FROM docs
+  WHERE MATCH(body) AGAINST('+数据库 -needle' IN BOOLEAN MODE) LIMIT 13)t ORDER BY id;
+SELECT COUNT(*) FROM (SELECT id FROM docs WHERE MATCH(body) AGAINST('nonexistentzz') LIMIT 20)t;
+SELECT COUNT(*) FROM (SELECT id FROM docs WHERE MATCH(body) AGAINST('database') LIMIT 20 OFFSET 5000)t;
+PREPARE stmt FROM 'SELECT id FROM docs WHERE MATCH(body) AGAINST(?) LIMIT 7';
+SET @words='rare needle';
+--sorted_result
+EXECUTE stmt USING @words;
+SET @words='精确 数据库';
+--sorted_result
+EXECUTE stmt USING @words;
+DEALLOCATE PREPARE stmt;
+# More than sixteen independent chains, conflicts, gaps, CJK and parser modes.
+SELECT TOKENIZE(REPEAT('南京市长江大桥 中国人民银行 abc 123.45 三百二十公里 😀 ',3),
+ 'ik','[{"output":"all"}]');
+SELECT TOKENIZE(REPEAT('南京市长江大桥 中国人民银行 abc 123.45 三百二十公里 😀 ',3),
+ 'ik','[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]');
+SELECT TOKENIZE('研究生命起源 阿尔卑斯 冰川 上海 한국어 カタカナ 龘 𠀀','ik','[{"output":"all"}]');
+SELECT TOKENIZE(REPEAT('北京 上海 南京 杭州 深圳 广州 香港 重庆 中国 数据库 ',20),
+ 'ik','[{"output":"all"}]');
+DROP DATABASE fts_ik_bmw_seek_regression;

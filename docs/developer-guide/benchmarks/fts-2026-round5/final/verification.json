@@ -1,0 +1,42 @@
+{
+  "base_commit": "64508f5e3f5b58c6be07c4e284a6cf721942a683",
+  "binary_sha256": "bb68b00d611a9a8f1ac93d706ab80c765d087359c429880a073e323bc5ce62ef",
+  "source_matches_compilation_directory": {
+    "src/storage/fts/ik/ob_ik_arbitrator.cpp": "c39e28d1aebe093d500bb467a1c0ddb683d179e0dc762331219fab396fd0619b",
+    "src/storage/fts/ik/ob_ik_arbitrator.h": "00054da4b1b93ce0bafdbe2c178e27a742f061fc06566e3bbae49ea9ce4ff805",
+    "src/storage/retrieval/ob_text_retrieval_token_iter.cpp": "267112816322d527aa95387869fde5263dbfb24e88a1a8fb2cff124af0571e33"
+  },
+  "benchmark_files_match_compilation_directory": {
+    "tools/benchmark/fts_large_bench.sh": "596ea5d1c0038e666b78aa94bef22d2dfb87ffc9e84dbc7e2a1da1f746424462",
+    "tools/benchmark/fts_large_bench_gen.py": "b0c816dd8211ac0471f60b72a37a3fb5c62580357a5b6d7ac95f5a8c2e3f143d",
+    "tools/benchmark/fts_large_bench_setup.sql": "311826751df7f51ac45156fb4284aeca9bd9197370aceb88f4fb92832b458108",
+    "tools/benchmark/fts_large_bench_score.py": "bea52eb1c68d05693bb3ac5b910ab0e2fa0e70e01582f40466898ee1e2e3ef55",
+    "tools/benchmark/fts_large_bench_baseline.json": "f4e97eddb2e49c982b967fc8047f7cf37177eebe53d648f6746d85aacda91f0c"
+  },
+  "build": "Full Release make -j3 seekdb, then rebuild retrieval and IK unity objects, archive and relink final candidate",
+  "mysqltests_passed": [
+    "fts_ik_bmw_seek_regression",
+    "fts_score_filter_regression",
+    "fts_build_batch_regression",
+    "fts_batch_merge_regression",
+    "fts_hotpath_regression",
+    "tokenize_function",
+    "simple_query",
+    "parser_properties",
+    "domain_id_merge_with_compare_null",
+    "create_table_with_fts_index",
+    "create_fts_index_afterward"
+  ],
+  "result_sets": 1668,
+  "result_sha256": "347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa",
+  "extended_result_sets": 1302,
+  "extended_result_sha256": "c2f44bb4f02eda0065fba02e49335d012813929a8c95817e6602467c8f9640ec",
+  "unicode_result_sets": 1062,
+  "unicode_result_sha256": "26e9f26e63e86867c4fa82e3e584e72222204bffafa122552eea5b034e8476c0",
+  "concurrency": "8 connections x 200 calls, 25 cases, error recovery and long unique documents",
+  "benchmark_runs": 6,
+  "cpu_diagnostic_runs": 4,
+  "timesync_restored": true,
+  "official_baseline_available": false,
+  "benchmark_and_workflow_match_base_commit": true
+}

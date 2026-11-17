@@ -1,0 +1,34 @@
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round4query
+0 round4query select1 {'sampled_request_cpu_ms': 0.0424424424, 'samples': 424, 'wall_ms': 0.1759266155999967, 'rounds': 10000, 'result_sha256': '8349bb5d2d44e8d655364829a2ce742165d10f6cb3966ecc05e35fb83ab9f28c'}
+0 round4query token_ik {'sampled_request_cpu_ms': 0.13153153139999998, 'samples': 2628, 'wall_ms': 0.2847867413500012, 'rounds': 20000, 'result_sha256': 'de9214d04f951bad4c25e8d5eb2191d68e49ebac7135524e78800dc5085c0211'}
+0 round4query token_beng {'sampled_request_cpu_ms': 0.0819819819, 'samples': 1638, 'wall_ms': 0.22436361889999717, 'rounds': 20000, 'result_sha256': 'bdf837bcd08acce12d08788a951f32eb22ebb15a70708d82f289f881a7f02755'}
+0 round4query cn {'sampled_request_cpu_ms': 1.3878878865, 'samples': 2773, 'wall_ms': 1.6764357869999458, 'rounds': 2000, 'result_sha256': '14b2cddf1e527018bd5e4b95c9b6dd32550da0d108bc3032ba88752b7f92e937'}
+0 round4query beng {'sampled_request_cpu_ms': 1.749749748, 'samples': 3496, 'wall_ms': 2.0106465179999304, 'rounds': 2000, 'result_sha256': 'eabded135f68fd493ae00a95f7e987b832081d09f02a2553b830ac260edf1884'}
+0 round4query mixed {'sampled_request_cpu_ms': 1.3778778765, 'samples': 2753, 'wall_ms': 1.6118215160000773, 'rounds': 2000, 'result_sha256': '754afaeef09cd63e44ab93fb9f83553ebcf93dafead5c3398a7b537a9e08eebf'}
+0 round4query limit {'sampled_request_cpu_ms': 2.3363363340000003, 'samples': 4668, 'wall_ms': 2.596753662499964, 'rounds': 2000, 'result_sha256': 'f704b4f65e7b50d4f3c363c046f31993dcb8e51a4ab7a702f592b46e19f8ea1a'}
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round5final
+1 round5final select1 {'sampled_request_cpu_ms': 0.0399399399, 'samples': 399, 'wall_ms': 0.1711760570000024, 'rounds': 10000, 'result_sha256': '8349bb5d2d44e8d655364829a2ce742165d10f6cb3966ecc05e35fb83ab9f28c'}
+1 round5final token_ik {'sampled_request_cpu_ms': 0.1283283282, 'samples': 2564, 'wall_ms': 0.29023849234999943, 'rounds': 20000, 'result_sha256': 'de9214d04f951bad4c25e8d5eb2191d68e49ebac7135524e78800dc5085c0211'}
+1 round5final token_beng {'sampled_request_cpu_ms': 0.0796796796, 'samples': 1592, 'wall_ms': 0.22950311424999653, 'rounds': 20000, 'result_sha256': 'bdf837bcd08acce12d08788a951f32eb22ebb15a70708d82f289f881a7f02755'}
+1 round5final cn {'sampled_request_cpu_ms': 1.183183182, 'samples': 2364, 'wall_ms': 1.4122352760000467, 'rounds': 2000, 'result_sha256': '14b2cddf1e527018bd5e4b95c9b6dd32550da0d108bc3032ba88752b7f92e937'}
+1 round5final beng {'sampled_request_cpu_ms': 1.856856855, 'samples': 3710, 'wall_ms': 2.1434129655000334, 'rounds': 2000, 'result_sha256': 'eabded135f68fd493ae00a95f7e987b832081d09f02a2553b830ac260edf1884'}
+1 round5final mixed {'sampled_request_cpu_ms': 1.3198198185, 'samples': 2637, 'wall_ms': 1.5369982664999498, 'rounds': 2000, 'result_sha256': '754afaeef09cd63e44ab93fb9f83553ebcf93dafead5c3398a7b537a9e08eebf'}
+1 round5final limit {'sampled_request_cpu_ms': 2.3363363340000003, 'samples': 4668, 'wall_ms': 2.599162682499923, 'rounds': 2000, 'result_sha256': 'f704b4f65e7b50d4f3c363c046f31993dcb8e51a4ab7a702f592b46e19f8ea1a'}
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round5final
+2 round5final select1 {'sampled_request_cpu_ms': 0.0417417417, 'samples': 417, 'wall_ms': 0.16425371310001538, 'rounds': 10000, 'result_sha256': '8349bb5d2d44e8d655364829a2ce742165d10f6cb3966ecc05e35fb83ab9f28c'}
+2 round5final token_ik {'sampled_request_cpu_ms': 0.13778778765, 'samples': 2753, 'wall_ms': 0.28245100584999816, 'rounds': 20000, 'result_sha256': 'de9214d04f951bad4c25e8d5eb2191d68e49ebac7135524e78800dc5085c0211'}
+2 round5final token_beng {'sampled_request_cpu_ms': 0.07537537529999999, 'samples': 1506, 'wall_ms': 0.20661666820000163, 'rounds': 20000, 'result_sha256': 'bdf837bcd08acce12d08788a951f32eb22ebb15a70708d82f289f881a7f02755'}
+2 round5final cn {'sampled_request_cpu_ms': 1.2617617605, 'samples': 2521, 'wall_ms': 1.499295343999961, 'rounds': 2000, 'result_sha256': '14b2cddf1e527018bd5e4b95c9b6dd32550da0d108bc3032ba88752b7f92e937'}
+2 round5final beng {'sampled_request_cpu_ms': 1.6466466450000001, 'samples': 3290, 'wall_ms': 1.8695845185000053, 'rounds': 2000, 'result_sha256': 'eabded135f68fd493ae00a95f7e987b832081d09f02a2553b830ac260edf1884'}
+2 round5final mixed {'sampled_request_cpu_ms': 1.5250250235, 'samples': 3047, 'wall_ms': 1.6232422839999572, 'rounds': 2000, 'result_sha256': '754afaeef09cd63e44ab93fb9f83553ebcf93dafead5c3398a7b537a9e08eebf'}
+2 round5final limit {'sampled_request_cpu_ms': 2.5200200175, 'samples': 5035, 'wall_ms': 2.7992797699999983, 'rounds': 2000, 'result_sha256': 'f704b4f65e7b50d4f3c363c046f31993dcb8e51a4ab7a702f592b46e19f8ea1a'}
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round4query
+3 round4query select1 {'sampled_request_cpu_ms': 0.043343343299999997, 'samples': 433, 'wall_ms': 0.16454213109998364, 'rounds': 10000, 'result_sha256': '8349bb5d2d44e8d655364829a2ce742165d10f6cb3966ecc05e35fb83ab9f28c'}
+3 round4query token_ik {'sampled_request_cpu_ms': 0.13268268255000001, 'samples': 2651, 'wall_ms': 0.2890865362500108, 'rounds': 20000, 'result_sha256': 'de9214d04f951bad4c25e8d5eb2191d68e49ebac7135524e78800dc5085c0211'}
+3 round4query token_beng {'sampled_request_cpu_ms': 0.07162162155, 'samples': 1431, 'wall_ms': 0.21810450615000718, 'rounds': 20000, 'result_sha256': 'bdf837bcd08acce12d08788a951f32eb22ebb15a70708d82f289f881a7f02755'}
+3 round4query cn {'sampled_request_cpu_ms': 1.0885885874999999, 'samples': 2175, 'wall_ms': 1.2923527169999716, 'rounds': 2000, 'result_sha256': '14b2cddf1e527018bd5e4b95c9b6dd32550da0d108bc3032ba88752b7f92e937'}
+3 round4query beng {'sampled_request_cpu_ms': 1.5390390375, 'samples': 3075, 'wall_ms': 1.8071501575000184, 'rounds': 2000, 'result_sha256': 'eabded135f68fd493ae00a95f7e987b832081d09f02a2553b830ac260edf1884'}
+3 round4query mixed {'sampled_request_cpu_ms': 1.3148148135, 'samples': 2627, 'wall_ms': 1.5206946559999324, 'rounds': 2000, 'result_sha256': '754afaeef09cd63e44ab93fb9f83553ebcf93dafead5c3398a7b537a9e08eebf'}
+3 round4query limit {'sampled_request_cpu_ms': 2.5090090065, 'samples': 5013, 'wall_ms': 2.7910854285000823, 'rounds': 2000, 'result_sha256': 'f704b4f65e7b50d4f3c363c046f31993dcb8e51a4ab7a702f592b46e19f8ea1a'}
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round5final
+SAMPLED REQUEST CPU COMPLETE

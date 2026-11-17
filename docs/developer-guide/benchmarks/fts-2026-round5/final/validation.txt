@@ -1,0 +1,22 @@
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round4query
+EXTENDED PASS 1302 c2f44bb4f02eda0065fba02e49335d012813929a8c95817e6602467c8f9640ec
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+EXTENDED PASS 1302 c2f44bb4f02eda0065fba02e49335d012813929a8c95817e6602467c8f9640ec
+INSTALLED /home/bit/seekdb-run/seekdb1/bin/seekdb -> /home/bit/seekdb-run/seekdb1/bin/seekdb.round5final
+PASS 1668 result sets 347f477f6fa61449eda234d010009f76287cb412fdbf4de692daa38c1cdcdeaa
+EXTENDED PASS 1302 c2f44bb4f02eda0065fba02e49335d012813929a8c95817e6602467c8f9640ec
+fts_ik_bmw_seek_regression PASS
+fts_score_filter_regression PASS
+fts_build_batch_regression PASS
+fts_batch_merge_regression PASS
+fts_hotpath_regression PASS
+tokenize_function PASS
+simple_query PASS
+parser_properties PASS
+domain_id_merge_with_compare_null PASS
+create_table_with_fts_index PASS
+create_fts_index_afterward PASS
+FAILED: []
+UNICODE PASS 1062 26e9f26e63e86867c4fa82e3e584e72222204bffafa122552eea5b034e8476c0
+PASS 25 cases, 8 connections x 200 calls, error recovery, long unique documents
+ROUND5 FINAL VALIDATION COMPLETE

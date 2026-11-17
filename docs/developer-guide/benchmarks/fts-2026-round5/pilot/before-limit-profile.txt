@@ -1,0 +1,41 @@
+# Total Lost Samples: 0
+# Samples: 9K of event 'cpu-clock:u'
+     6.31%  ReqWorker        libc.so.6             [.] __memcmp_avx2_movbe
+     4.02%  ReqWorker        seekdb.round4query    [.] oceanbase::blocksstable::ObStringDiffDecoder::batch_decode
+     3.99%  ReqWorker        seekdb.round4query    [.] oceanbase::common::ObIArrayWrap<oceanbase::common::hash::ObHashSet<unsigned long, oceanbase::common::hash::NoPthreadDefendMode, oceanbase::common::hash::hash_func<unsigned long>, oceanbase::common::hash::equal_to<unsigned long>, oceanbase::common::hash::SimpleAllocer<oceanbase::common::hash::ObHashTableNode<oceanbase::common::hash::HashMapPair<unsigned long, oceanbase::common::hash::HashNullObj> >, 108, oceanbase::common::hash::SpinMutexDefendMode, oceanbase::common::hash::DefaultSimpleAllocerAllocator>, oceanbase::common::hash::NormalPointer, oceanbase::common::ObMalloc, 1l>*>::at
+     3.96%  ReqWorker        libc.so.6             [.] __memmove_avx_unaligned_erms
+     2.46%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObSimpleRowsMerger<oceanbase::storage::ObSRMergeItem, oceanbase::storage::ObSRMergeCmp>::push
+     2.30%  ReqWorker        seekdb.round4query    [.] oceanbase::common::ObNullSafeDatumStrCmp<(oceanbase::common::ObCollationType)63, false, true>::cmp
+     2.13%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::compare_binary_retrieval_ids
+     1.64%  ReqWorker        seekdb.round4query    [.] 0x000000000726e360
+     1.61%  ReqWorker        seekdb.round4query    [.] oceanbase::sql::ObExprBM25::eval_batch_bm25_relevance_expr
+     1.60%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObSRBMWIterImpl::next_pivot
+     1.53%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObSimpleRowsMerger<oceanbase::storage::ObBlockStatIterator::ObBlockStatKeyItem, oceanbase::storage::ObBlockStatIterator::ObBlockStatKeyCmp>::empty
+     1.45%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::save_relevances_and_docids
+     1.42%  python3          python3.10            [.] _PyEval_EvalFrameDefault
+     1.15%  ReqWorker        seekdb.round4query    [.] oceanbase::blocksstable::batch_load_data_to_datum
+     1.11%  ReqWorker        seekdb.round4query    [.] oceanbase::sql::ObBitVectorImpl<unsigned long>::at
+     1.09%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObSimpleRowsMerger<oceanbase::storage::ObSRMergeItem, oceanbase::storage::ObSRMergeCmp>::pop
+     1.09%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObTextRetrievalDaaTTokenIter::advance_to
+     1.02%  ReqWorker        seekdb.round4query    [.] oceanbase::sql::ObDocIdExt::from_datum
+     1.01%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObSRMergeCmp::get_id_datum
+     0.98%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObBlockMaxScoreIterator::advance_to
+     0.98%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObTextRetrievalBlockMaxIter::get_curr_id
+     0.89%  ReqWorker        seekdb.round4query    [.] oceanbase::blocksstable::ObIntegerBaseDiffDecoder::batch_get_bitpacked_values
+     0.86%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObTextRetrievalBlockMaxIter::get_curr_score
+     0.85%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObTextRetrievalBlockMaxIter::advance_to
+     0.83%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObSRBMWIterImpl::advance_dim_iters_for_next_round
+     0.82%  ReqWorker        seekdb.round4query    [.] oceanbase::blocksstable::ObRowReader::setup_row
+     0.79%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObSRBMWIterImpl::evaluate_pivot_range
+     0.79%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObSRDaaTIterImpl::collect_dims_by_id
+     0.77%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObTextRetrievalBlockMaxIter::get_dim_max_score
+     0.75%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObSRBMWIterImpl::top_k_search
+     0.71%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObSRDaaTIterImpl::fill_merge_heap
+     0.71%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObSimpleRowsMerger<oceanbase::storage::ObSRMergeItem, oceanbase::storage::ObSRMergeCmp>::top
+     0.69%  ReqWorker        seekdb.round4query    [.] oceanbase::common::ObIArrayWrap<oceanbase::common::ObTuple<oceanbase::sql::ObRawExpr*, oceanbase::sql::ObRawExpr*> >::at
+     0.68%  ReqWorker        seekdb.round4query    [.] oceanbase::common::ObIArrayWrap<int (*)(oceanbase::common::ObDatum const&, oceanbase::common::ObDatum const&, int&, oceanbase::common::ObDatumAccessContext const*)>::at
+     0.63%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObTextRetrievalBlockMaxIter::get_next_row
+     0.58%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObSRBMWIterImpl::evaluate_pivot
+     0.57%  ReqWorker        seekdb.round4query    [.] oceanbase::storage::ObBlockBatchedRowStore::get_row_ids
+     0.54%  ReqWorker        seekdb.round4query    [.] oceanbase::blocksstable::ObStringDiffDecoder::decode
+     0.51%  ReqWorker        seekdb.round4query    [.] oceanbase::common::ObKVCacheMap::get

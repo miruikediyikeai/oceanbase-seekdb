@@ -1,0 +1,151 @@
+DROP DATABASE IF EXISTS fts_ik_bmw_seek_regression;
+CREATE DATABASE fts_ik_bmw_seek_regression;
+USE fts_ik_bmw_seek_regression;
+SET NAMES utf8mb4;
+SET ob_query_timeout=1000000000;
+CREATE TABLE digits(n INT PRIMARY KEY);
+INSERT INTO digits VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
+CREATE TABLE docs(id INT PRIMARY KEY,body LONGTEXT,FULLTEXT INDEX ft(body) WITH PARSER ik);
+INSERT INTO docs
+SELECT n,CASE WHEN n%17=0 THEN NULL WHEN n%19=0 THEN '' ELSE CONCAT(
+REPEAT('数据库 database ',1+n%7),
+IF(n%3=0,'南京市长江大桥 alpha alpha ','中国人民银行 beta '),
+IF(n%11=0,'rare 稀有 gamma ','common 普通 delta '),
+IF(n%127=0,'needle 精确 ',' '),REPEAT('索引 search ',n%13)) END
+FROM (SELECT 1+a.n+10*b.n+100*c.n+1000*d.n AS n FROM digits a,digits b,digits c,digits d)s
+WHERE n<=2053;
+DELETE FROM docs WHERE id%23=0;
+UPDATE docs SET body='changed 数据库 needle 精确' WHERE id%251=0;
+SELECT COUNT(*),SUM(id) FROM docs WHERE MATCH(body) AGAINST('数据库 database');
+COUNT(*)	SUM(id)
+1751	1798080
+SELECT id,ROUND(score,10) FROM
+(SELECT id,MATCH(body) AGAINST('数据库 database') AS score FROM docs
+WHERE MATCH(body) AGAINST('数据库 database') LIMIT 20)t ORDER BY id;
+id	ROUND(score,10)
+13	0.8546059933
+26	0.8429118774
+104	0.8546059933
+208	0.8429118774
+286	0.8546059933
+377	0.8546059933
+481	0.8429118774
+559	0.8546059933
+650	0.8546059933
+832	0.8546059933
+845	0.8429118774
+923	0.8546059933
+1378	0.8546059933
+1469	0.8546059933
+1573	0.8429118774
+1742	0.8546059933
+1846	0.8429118774
+1924	0.8546059933
+1937	0.8429118774
+2015	0.8546059933
+SELECT id,ROUND(score,10) FROM
+(SELECT id,MATCH(body) AGAINST('数据库 rare needle 精确') AS score FROM docs
+WHERE MATCH(body) AGAINST('数据库 rare needle 精确') LIMIT 17 OFFSET 255)t ORDER BY id;
+id	ROUND(score,10)
+27	0.4108858058
+41	0.4108858058
+223	0.4108858058
+314	0.4108858058
+496	0.4108858058
+573	0.4108858058
+587	0.4108858058
+846	0.4108858058
+860	0.4108858058
+1042	0.4108858058
+1119	0.4108858058
+1315	0.4108858058
+1392	0.4108858058
+1588	0.4108858058
+1665	0.4108858058
+1861	0.4108858058
+1952	0.4108858058
+SELECT id,ROUND(score,10) FROM
+(SELECT id,MATCH(body) AGAINST('rare needle') AS score FROM docs
+WHERE MATCH(body) AGAINST('rare needle') LIMIT 7 OFFSET 1)t ORDER BY id;
+id	ROUND(score,10)
+251	5.7942537549
+502	5.7942537549
+753	5.7942537549
+1004	5.7942537549
+1506	5.7942537549
+1757	5.7942537549
+2008	5.7942537549
+SELECT COUNT(*),SUM(id),ROUND(SUM(score),9) FROM
+(SELECT id,MATCH(body) AGAINST('database alpha beta 索引') AS score FROM docs
+WHERE MATCH(body) AGAINST('database alpha beta 索引') LIMIT 257 OFFSET 256)t;
+COUNT(*)	SUM(id)	ROUND(SUM(score),9)
+257	266202	369.190417175
+SELECT COUNT(*),SUM(id),ROUND(SUM(score),9) FROM
+(SELECT id,MATCH(body) AGAINST('database alpha beta 索引') AS score FROM docs
+WHERE MATCH(body) AGAINST('database alpha beta 索引') LIMIT 513 OFFSET 1023)t;
+COUNT(*)	SUM(id)	ROUND(SUM(score),9)
+513	527138	424.920874283
+SELECT id,ROUND(score,10) FROM
+(SELECT id,MATCH(body) AGAINST('+数据库 -needle' IN BOOLEAN MODE) AS score FROM docs
+WHERE MATCH(body) AGAINST('+数据库 -needle' IN BOOLEAN MODE) LIMIT 13)t ORDER BY id;
+id	ROUND(score,10)
+13	0.4273029967
+104	0.4273029967
+286	0.4273029967
+377	0.4273029967
+559	0.4273029967
+650	0.4273029967
+832	0.4273029967
+923	0.4273029967
+1378	0.4273029967
+1469	0.4273029967
+1742	0.4273029967
+1924	0.4273029967
+2015	0.4273029967
+SELECT COUNT(*) FROM (SELECT id FROM docs WHERE MATCH(body) AGAINST('nonexistentzz') LIMIT 20)t;
+COUNT(*)
+0
+SELECT COUNT(*) FROM (SELECT id FROM docs WHERE MATCH(body) AGAINST('database') LIMIT 20 OFFSET 5000)t;
+COUNT(*)
+0
+PREPARE stmt FROM 'SELECT id FROM docs WHERE MATCH(body) AGAINST(?) LIMIT 7';
+SET @words='rare needle';
+EXECUTE stmt USING @words;
+id
+1004
+1255
+1506
+1757
+2008
+251
+753
+SET @words='精确 数据库';
+EXECUTE stmt USING @words;
+id
+1004
+1255
+1506
+1757
+2008
+251
+753
+DEALLOCATE PREPARE stmt;
+SELECT TOKENIZE(REPEAT('南京市长江大桥 中国人民银行 abc 123.45 三百二十公里 😀 ',3),
+'ik','[{"output":"all"}]');
+TOKENIZE(REPEAT('南京市长江大桥 中国人民银行 abc 123.45 三百二十公里 😀 ',3),
+'ik','[{"output":"all"}]')
+{"tokens": [{"三百二十": 3}, {"长江大桥": 3}, {"abc": 3}, {"公里": 3}, {"南京市": 3}, {"123.45": 3}, {"中国人民银行": 3}], "doc_len": 21}
+SELECT TOKENIZE(REPEAT('南京市长江大桥 中国人民银行 abc 123.45 三百二十公里 😀 ',3),
+'ik','[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]');
+TOKENIZE(REPEAT('南京市长江大桥 中国人民银行 abc 123.45 三百二十公里 😀 ',3),
+'ik','[{"output":"all"},{"additional_args":[{"ik_mode":"max_word"}]}]')
+{"tokens": [{"中国": 3}, {"南京": 3}, {"三百二十": 3}, {"人民银行": 3}, {"二十": 3}, {"大桥": 3}, {"百二": 3}, {"市长": 3}, {"中国人": 3}, {"国人": 3}, {"人民": 3}, {"长江大桥": 3}, {"银行": 3}, {"abc": 3}, {"公里": 3}, {"长江": 3}, {"南京市": 3}, {"十公里": 3}, {"123.45": 3}, {"中国人民": 3}, {"中国人民银行": 3}], "doc_len": 63}
+SELECT TOKENIZE('研究生命起源 阿尔卑斯 冰川 上海 한국어 カタカナ 龘 𠀀','ik','[{"output":"all"}]');
+TOKENIZE('研究生命起源 阿尔卑斯 冰川 上海 한국어 カタカナ 龘 𠀀','ik','[{"output":"all"}]')
+{"tokens": [{"阿尔卑斯": 1}, {"タ": 1}, {"研究": 1}, {"ナ": 1}, {"국": 1}, {"起源": 1}, {"한": 1}, {"冰川": 1}, {"カ": 2}, {"上海": 1}, {"어": 1}, {"生命": 1}, {"龘": 1}], "doc_len": 14}
+SELECT TOKENIZE(REPEAT('北京 上海 南京 杭州 深圳 广州 香港 重庆 中国 数据库 ',20),
+'ik','[{"output":"all"}]');
+TOKENIZE(REPEAT('北京 上海 南京 杭州 深圳 广州 香港 重庆 中国 数据库 ',20),
+'ik','[{"output":"all"}]')
+{"tokens": [{"广州": 20}, {"南京": 20}, {"数据库": 20}, {"北京": 20}, {"上海": 20}, {"深圳": 20}, {"杭州": 20}, {"香港": 20}, {"重庆": 20}, {"中国": 20}], "doc_len": 200}
+DROP DATABASE fts_ik_bmw_seek_regression;

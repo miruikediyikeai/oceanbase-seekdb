@@ -1,0 +1,17 @@
+# Total Lost Samples: 0
+# Samples: 4K of event 'cpu-clock:u'
+    16.23%  python3         python3.10          [.] _PyEval_EvalFrameDefault
+     2.78%  python3         python3.10          [.] _PyObject_GetMethod
+     1.60%  ReqWorker       seekdb.round4query  [.] oceanbase::storage::ObArrayHashMap::find
+     1.57%  ReqWorker       seekdb.round4query  [.] oceanbase::storage::ObFTDATReader<void>::match_with_hit
+     1.33%  python3         python3.10          [.] _PyObject_GenericGetAttrWithDict
+     0.99%  python3         python3.10          [.] _PyFunction_Vectorcall
+     0.87%  ReqWorker       libc.so.6           [.] __memcmp_avx2_movbe
+     0.70%  ReqWorker       libc.so.6           [.] __strlen_avx2
+     0.68%  ReqWorker       libc.so.6           [.] __memmove_avx_unaligned_erms
+     0.68%  ReqWorker       seekdb.round4query  [.] oceanbase::share::ObColumnChecksumErrorInfoTableStorage::~ObColumnChecksumErrorInfoTableStorage
+     0.58%  ReqWorker       seekdb.round4query  [.] oceanbase::common::ObArenaAllocator::alloc
+     0.53%  ReqWorker       libc.so.6           [.] __memset_avx2_unaligned_erms
+     0.53%  python3         python3.10          [.] _PyObject_GenericSetAttrWithDict
+     0.51%  ReqWorker       seekdb.round4query  [.] oceanbase::common::PageArena<char, oceanbase::common::ModulePageAllocator>::_alloc_aligned
+     0.51%  python3         python3.10          [.] PyObject_SetAttr

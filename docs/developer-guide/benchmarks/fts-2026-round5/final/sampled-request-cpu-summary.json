@@ -1,0 +1,49 @@
+{
+  "event": "cpu-clock",
+  "frequency_hz": 999,
+  "comm": "ReqWorker",
+  "sample_order": [
+    "before",
+    "after",
+    "after",
+    "before"
+  ],
+  "means": {
+    "select1": {
+      "before": 0.04289289285,
+      "after": 0.0408408408,
+      "improvement": 0.04784130688448081
+    },
+    "token_ik": {
+      "before": 0.132107106975,
+      "after": 0.133058057925,
+      "improvement": -0.007198333017616983
+    },
+    "token_beng": {
+      "before": 0.07680180172500001,
+      "after": 0.07752752745,
+      "improvement": -0.009449332029977022
+    },
+    "cn": {
+      "before": 1.238238237,
+      "after": 1.2224724712500001,
+      "improvement": 0.012732417138237577
+    },
+    "beng": {
+      "before": 1.64439439275,
+      "after": 1.75175175,
+      "improvement": -0.06528686653477397
+    },
+    "mixed": {
+      "before": 1.346346345,
+      "after": 1.422422421,
+      "improvement": -0.05650557620817852
+    },
+    "limit": {
+      "before": 2.42267267025,
+      "after": 2.4281781757500003,
+      "improvement": -0.0022724925111043885
+    }
+  },
+  "note": "Diagnostic only; includes request processing and sampling error, not official benchmark score."
+}
